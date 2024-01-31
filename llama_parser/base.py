@@ -5,7 +5,7 @@ import time
 from enum import Enum
 from typing import List, Optional
 
-from llama_index.bridge.pydantic import Field
+from llama_index.bridge.pydantic import Field, validator
 from llama_index.readers.base import BasePydanticReader
 from llama_index.schema import Document
 
@@ -20,6 +20,7 @@ class ResultType(str, Enum):
 class LlamaParser(BasePydanticReader):
     """A smart-parser for files."""
 
+    api_key: str = Field(default="", description="The API key for the Llama Parser API.")
     base_url: str = Field(
         default="https://cloud.llamaindex.com/api/parsing",
         description="The base URL of the Llama Parsing API.",
@@ -35,6 +36,18 @@ class LlamaParser(BasePydanticReader):
         default=2000,
         description="The maximum timeout in seconds to wait for the parsing to finish.",
     )
+
+    @validator("api_key")
+    def validate_api_key(cls, v: str) -> str:
+        """Validate the API key."""
+        if not v:
+            import os
+            api_key = os.getenv("LLAMA_CLOUD_API_KEY", None)
+            if api_key is None:
+                raise ValueError("The API key is required.")
+            return api_key
+        
+        return v
 
     def load_data(self, file_path: str, extra_info: Optional[dict] = None) -> List[Document]:
         """Load data from the input path."""
