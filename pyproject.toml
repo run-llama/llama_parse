@@ -12,6 +12,9 @@ python = ">=3.8.1,<4.0"
 llama-index = "^0.9.40"
 
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

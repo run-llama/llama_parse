@@ -22,7 +22,7 @@ class LlamaParser(BasePydanticReader):
 
     api_key: str = Field(default="", description="The API key for the Llama Parser API.")
     base_url: str = Field(
-        default="https://cloud.llamaindex.com/api/parsing",
+        default="https://api.cloud.llamaindex.ai/api/parsing",
         description="The base URL of the Llama Parsing API.",
     )
     result_type: ResultType = Field(
@@ -70,7 +70,7 @@ class LlamaParser(BasePydanticReader):
             url = f"{self.base_url}/upload"
             async with httpx.AsyncClient() as client:
                 response = await client.post(url, files=files)
-                if not response.ok:
+                if not response.is_success:
                     raise Exception(f"Failed to parse the PDF file: {response.text}")
 
         # check the status of the job, return when done
@@ -82,13 +82,13 @@ class LlamaParser(BasePydanticReader):
             await asyncio.sleep(self.check_interval)
             async with httpx.AsyncClient() as client:
                 status = await client.get(status_url)
-                if not response.ok:
+                if not response.is_success:
                     raise Exception(f"Failed to parse the PDF file: {response.text}")
                 status = response.json()['status']
                 if status == "completed":
                     result_url = f"{self.base_url}/job/{job_id}/result/{self.result_type.value}"
                     result = await client.get(result_url)
-                    if not result.ok:
+                    if not result.is_success:
                         raise Exception(f"Failed to parse the PDF file: {response.text}")
     
                     return [
