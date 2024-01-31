@@ -1,2 +1,3 @@
 .git
-__pyache__/
+__pycache__/
+*.pyc
