@@ -22,7 +22,7 @@ class LlamaParser(BasePydanticReader):
 
     api_key: str = Field(default="", description="The API key for the Llama Parser API.")
     base_url: str = Field(
-        default="https://api.staging.llamaindex.ai/api/parsing",
+        default="https://api.cloud.llamaindex.ai/api/parsing",
         description="The base URL of the Llama Parsing API.",
     )
     result_type: ResultType = Field(
