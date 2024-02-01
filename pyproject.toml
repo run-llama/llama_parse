@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "llama-parse"
+name = "llama-parser"
 version = "0.1.0"
 description = "Parse files into RAG-Optimized formats."
 authors = ["Logan Markewich <logan@llamaindex.ai>"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "llama_parse"}]
+packages = [{include = "llama_parser"}]
 
 [tool.poetry.dependencies]
 python = ">=3.8.1,<4.0"
