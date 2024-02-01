@@ -86,6 +86,10 @@ class LlamaParser(BasePydanticReader):
                 result = await client.get(result_url, headers=headers)
 
                 if not result.is_success:
+                    if time.time() - start > self.max_timeout:
+                        raise Exception(
+                            f"Timeout while parsing the PDF file: {response.text}"
+                        )
                     continue
 
                 return [
@@ -94,8 +98,3 @@ class LlamaParser(BasePydanticReader):
                         metadata=extra_info,
                     )
                 ]
-
-            if time.time() - start > self.max_timeout:
-                raise Exception(
-                    f"Timeout while parsing the PDF file: {response.text}"
-                )
