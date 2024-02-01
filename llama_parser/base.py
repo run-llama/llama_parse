@@ -37,7 +37,7 @@ class LlamaParser(BasePydanticReader):
         description="The maximum timeout in seconds to wait for the parsing to finish.",
     )
 
-    @validator("api_key")
+    @validator("api_key", pre=True, always=True)
     def validate_api_key(cls, v: str) -> str:
         """Validate the API key."""
         if not v:
@@ -61,15 +61,17 @@ class LlamaParser(BasePydanticReader):
         extra_info = extra_info or {}
         extra_info["file_path"] = file_path
 
+        headers = {"Authorization": f"Bearer {self.api_key}"}
+
         # load data, set the mime type
         with open(file_path, "rb") as f:
             mime_type = mimetypes.guess_type(file_path)[0]
-            files = {"pdf": (f.name, f, mime_type)}
+            files = {"file": (f.name, f, mime_type)}
 
             # send the request, start job
             url = f"{self.base_url}/upload"
             async with httpx.AsyncClient() as client:
-                response = await client.post(url, files=files)
+                response = await client.post(url, files=files, headers=headers)
                 if not response.is_success:
                     raise Exception(f"Failed to parse the PDF file: {response.text}")
 
@@ -81,13 +83,14 @@ class LlamaParser(BasePydanticReader):
         while True:
             await asyncio.sleep(self.check_interval)
             async with httpx.AsyncClient() as client:
-                status = await client.get(status_url)
+                status = await client.get(status_url, headers=headers)
                 if not response.is_success:
                     raise Exception(f"Failed to parse the PDF file: {response.text}")
+                
                 status = response.json()['status']
-                if status == "completed":
+                if status == "COMPLETED":
                     result_url = f"{self.base_url}/job/{job_id}/result/{self.result_type.value}"
-                    result = await client.get(result_url)
+                    result = await client.get(result_url, headers=headers)
                     if not result.is_success:
                         raise Exception(f"Failed to parse the PDF file: {response.text}")
     
@@ -97,7 +100,7 @@ class LlamaParser(BasePydanticReader):
                             metadata=extra_info,
                         )
                     ]
-                elif status not in ("WAIT", "WAITING"):
+                elif status not in ("WAIT", "WAITING", "PENDING"):
                     raise Exception(f"Failed to parse the PDF file: {response.text}")
 
             if time.time() - start > self.max_timeout:
