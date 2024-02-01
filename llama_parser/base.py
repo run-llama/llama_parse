@@ -22,7 +22,7 @@ class LlamaParser(BasePydanticReader):
 
     api_key: str = Field(default="", description="The API key for the Llama Parser API.")
     base_url: str = Field(
-        default="https://api.cloud.llamaindex.ai/api/parsing",
+        default="https://api.staging.llamaindex.ai/api/parsing",
         description="The base URL of the Llama Parsing API.",
     )
     result_type: ResultType = Field(
@@ -77,31 +77,23 @@ class LlamaParser(BasePydanticReader):
 
         # check the status of the job, return when done
         job_id = response.json()["id"]
-        status_url = f"{self.base_url}/job/{job_id}"
+        result_url = f"{self.base_url}/job/{job_id}/result/{self.result_type.value}"
 
         start = time.time()
         while True:
             await asyncio.sleep(self.check_interval)
-            async with httpx.AsyncClient() as client:
-                status = await client.get(status_url, headers=headers)
-                if not response.is_success:
-                    raise Exception(f"Failed to parse the PDF file: {response.text}")
-                
-                status = response.json()['status']
-                if status == "COMPLETED":
-                    result_url = f"{self.base_url}/job/{job_id}/result/{self.result_type.value}"
-                    result = await client.get(result_url, headers=headers)
-                    if not result.is_success:
-                        raise Exception(f"Failed to parse the PDF file: {response.text}")
-    
-                    return [
-                        Document(
-                            text=result.json()[self.result_type.value],
-                            metadata=extra_info,
-                        )
-                    ]
-                elif status not in ("WAIT", "WAITING", "PENDING"):
-                    raise Exception(f"Failed to parse the PDF file: {response.text}")
+            async with httpx.AsyncClient() as client:    
+                result = await client.get(result_url, headers=headers)
+
+                if not result.is_success:
+                    continue
+
+                return [
+                    Document(
+                        text=result.json()[self.result_type.value],
+                        metadata=extra_info,
+                    )
+                ]
 
             if time.time() - start > self.max_timeout:
                 raise Exception(
