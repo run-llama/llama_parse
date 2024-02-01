@@ -50,14 +50,10 @@ documents = SimpleDirectoryReader("./data", file_extractor=file_extractor).load_
 
 Full documentation for `SimpleDirectoryReader` can be found on the [LlamaIndex Documentation](https://docs.llamaindex.ai/en/stable/module_guides/loading/simpledirectoryreader.html).
 
-## Raw API usage
-
-<todo?>
-
 ## Examples
 
 Serveral end-to-end indexing examples can be found in the examples folder
 
-- ?
-- ?
-- ?
+- [Getting Started](examples/demo_basic.ipynb)
+- [Advanced RAG Example](examples/demo_advanced.ipynb)
+- [Raw API Usage](examples/demo_api.ipynb)
