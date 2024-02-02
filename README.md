@@ -1,6 +1,7 @@
 # LlamaParser (Preview)
 
 LlamaParser is an API to efficiently parse and represent files for downstream retrieval and context augmentation in your LLM / RAG application. 
+
 LlamaParser directly integrates with [LlamaIndex](https://github.com/run-llama/llama_index).
 
 Currently available in preview mode for **free**. Try it out today!
@@ -11,7 +12,7 @@ Currently available in preview mode for **free**. Try it out today!
 
 First, login and get an api-key from `https://cloud.llamaindex.ai`.
 
-Simply install the package:
+Install the package:
 
 `pip install llama-parser`
 
