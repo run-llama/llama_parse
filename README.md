@@ -1,8 +1,8 @@
-# LlamaParser (Preview)
+# LlamaParse (Preview)
 
-LlamaParser is an API to efficiently parse and represent files for downstream retrieval and context augmentation in your LLM / RAG application. 
+LlamaParse is an API created by LlamaIndex to effeciently parse and represent files for effecient retrieval and context augmentation using LlamaIndex frameworks.
 
-LlamaParser directly integrates with [LlamaIndex](https://github.com/run-llama/llama_index).
+LlamaParse directly integrates with [LlamaIndex](https://github.com/run-llama/llama_index).
 
 Currently available in preview mode for **free**. Try it out today!
 
@@ -14,14 +14,14 @@ First, login and get an api-key from `https://cloud.llamaindex.ai`.
 
 Install the package:
 
-`pip install llama-parser`
+`pip install llama-parse`
 
 Then, you can run the following to parse your first PDF file:
 
 ```python
-from llama_parser import LlamaParser
+from llama_parse import LlamaParse
 
-parser = LlamaParser(
+parser = LlamaParse(
     api_key="...",  # can also be set in your env as LLAMA_CLOUD_API_KEY
     result_type="markdown"  # "markdown" and "text" are available
 )
@@ -38,10 +38,10 @@ documents = await parser.aload_data("./my_file.pdf")
 You can also integrate the parser as the default PDF loader in `SimpleDirectoryReader`:
 
 ```python
-from llama_parser import LlamaParser
+from llama_parse import LlamaParse
 from llama_index import SimpleDirectoryReader
 
-parser = LlamaParser(
+parser = LlamaParse(
     api_key="...",  # can also be set in your env as LLAMA_CLOUD_API_KEY
     result_type="markdown"  # "markdown" and "text" are available
 )

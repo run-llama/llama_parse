@@ -17,10 +17,10 @@ class ResultType(str, Enum):
     MD = "markdown"
 
 
-class LlamaParser(BasePydanticReader):
+class LlamaParse(BasePydanticReader):
     """A smart-parser for files."""
 
-    api_key: str = Field(default="", description="The API key for the Llama Parser API.")
+    api_key: str = Field(default="", description="The API key for the LlamaParse API.")
     base_url: str = Field(
         default="https://api.cloud.llamaindex.ai/api/parsing",
         description="The base URL of the Llama Parsing API.",
