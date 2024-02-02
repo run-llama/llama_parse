@@ -19,6 +19,9 @@ Install the package:
 Then, you can run the following to parse your first PDF file:
 
 ```python
+import nest_asyncio
+nest_asyncio.apply()
+
 from llama_parse import LlamaParse
 
 parser = LlamaParse(
@@ -38,6 +41,9 @@ documents = await parser.aload_data("./my_file.pdf")
 You can also integrate the parser as the default PDF loader in `SimpleDirectoryReader`:
 
 ```python
+import nest_asyncio
+nest_asyncio.apply()
+
 from llama_parse import LlamaParse
 from llama_index import SimpleDirectoryReader
 
