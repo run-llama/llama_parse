@@ -1,8 +1,9 @@
-# Llama Parser (Preview)
+# LlamaParser (Preview)
 
-Llama Parser is an API created by LlamaIndex to effeciently parse and represent files for effecient retrieval and context augmentation using LlamaIndex frameworks.
+LlamaParser is an API to efficiently parse and represent files for downstream retrieval and context augmentation in your LLM / RAG application. 
+LlamaParser directly integrates with [LlamaIndex](https://github.com/run-llama/llama_index).
 
-Available for free as a preivew, you can try it out today.
+Currently available in preview mode for **free**. Try it out today!
 
 **NOTE:** Currently, only PDF files are supported.
 
