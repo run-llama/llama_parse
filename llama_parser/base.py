@@ -78,6 +78,7 @@ class LlamaParser(BasePydanticReader):
 
         # check the status of the job, return when done
         job_id = response.json()["id"]
+        print("Started parsing the file under job_id %s" % job_id)
         result_url = f"{self.base_url}/job/{job_id}/result/{self.result_type.value}"
 
         start = time.time()
