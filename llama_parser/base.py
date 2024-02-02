@@ -55,6 +55,7 @@ class LlamaParser(BasePydanticReader):
 
     async def aload_data(self, file_path: str, extra_info: Optional[dict] = None) -> List[Document]:
         """Load data from the input path."""
+        file_path = str(file_path)
         if not file_path.endswith(".pdf"):
             raise Exception("Currently, only PDF files are supported.")
 
