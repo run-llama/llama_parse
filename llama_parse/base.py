@@ -36,6 +36,9 @@ class LlamaParse(BasePydanticReader):
         default=2000,
         description="The maximum timeout in seconds to wait for the parsing to finish.",
     )
+    verbose: bool = Field(
+        default=True, description="Whether to print the progress of the parsing."
+    )
 
     @validator("api_key", pre=True, always=True)
     def validate_api_key(cls, v: str) -> str:
@@ -78,7 +81,9 @@ class LlamaParse(BasePydanticReader):
 
         # check the status of the job, return when done
         job_id = response.json()["id"]
-        print("Started parsing the file under job_id %s" % job_id)
+        if self.verbose:
+            print("Started parsing the file under job_id %s" % job_id)
+        
         result_url = f"{self.base_url}/job/{job_id}/result/{self.result_type.value}"
 
         start = time.time()
@@ -88,10 +93,13 @@ class LlamaParse(BasePydanticReader):
                 result = await client.get(result_url, headers=headers)
 
                 if not result.is_success:
-                    if time.time() - start > self.max_timeout:
+                    end = time.time()
+                    if end - start > self.max_timeout:
                         raise Exception(
                             f"Timeout while parsing the PDF file: {response.text}"
                         )
+                    if self.verbose and end - start % 10 == 0:
+                        print(".", end="", flush=True)
                     continue
 
                 return [
