@@ -74,7 +74,7 @@ class LlamaParse(BasePydanticReader):
 
             # send the request, start job
             url = f"{self.base_url}/upload"
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=self.max_timeout) as client:
                 response = await client.post(url, files=files, headers=headers)
                 if not response.is_success:
                     raise Exception(f"Failed to parse the PDF file: {response.text}")
@@ -87,9 +87,10 @@ class LlamaParse(BasePydanticReader):
         result_url = f"{self.base_url}/job/{job_id}/result/{self.result_type.value}"
 
         start = time.time()
+        tries = 0
         while True:
             await asyncio.sleep(self.check_interval)
-            async with httpx.AsyncClient() as client:    
+            async with httpx.AsyncClient(timeout=self.max_timeout) as client:    
                 result = await client.get(result_url, headers=headers)
 
                 if not result.is_success:
@@ -98,7 +99,7 @@ class LlamaParse(BasePydanticReader):
                         raise Exception(
                             f"Timeout while parsing the PDF file: {response.text}"
                         )
-                    if self.verbose and end - start % 10 == 0:
+                    if self.verbose and tries % 10 == 0:
                         print(".", end="", flush=True)
                     continue
 
@@ -108,3 +109,4 @@ class LlamaParse(BasePydanticReader):
                         metadata=extra_info,
                     )
                 ]
+            tries += 1
