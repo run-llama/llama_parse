@@ -26,7 +26,8 @@ from llama_parse import LlamaParse
 
 parser = LlamaParse(
     api_key="llx-...",  # can also be set in your env as LLAMA_CLOUD_API_KEY
-    result_type="markdown"  # "markdown" and "text" are available
+    result_type="markdown",  # "markdown" and "text" are available
+    verbose=True
 )
 
 # sync
@@ -49,7 +50,8 @@ from llama_index import SimpleDirectoryReader
 
 parser = LlamaParse(
     api_key="llx-...",  # can also be set in your env as LLAMA_CLOUD_API_KEY
-    result_type="markdown"  # "markdown" and "text" are available
+    result_type="markdown",  # "markdown" and "text" are available
+    verbose=True
 )
 
 file_extractor = {".pdf": parser}
