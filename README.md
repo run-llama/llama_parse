@@ -65,3 +65,7 @@ Serveral end-to-end indexing examples can be found in the examples folder
 - [Getting Started](examples/demo_basic.ipynb)
 - [Advanced RAG Example](examples/demo_advanced.ipynb)
 - [Raw API Usage](examples/demo_api.ipynb)
+
+## Terms of Service
+
+See the [Terms of Service Here](./TOS.pdf).
