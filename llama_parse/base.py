@@ -5,9 +5,9 @@ import time
 from enum import Enum
 from typing import List, Optional
 
-from llama_index.bridge.pydantic import Field, validator
-from llama_index.readers.base import BasePydanticReader
-from llama_index.schema import Document
+from llama_index.core.bridge.pydantic import Field, validator
+from llama_index.core.readers.base import BasePydanticReader
+from llama_index.core.schema import Document
 
 
 class ResultType(str, Enum):
