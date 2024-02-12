@@ -1,6 +1,6 @@
 # LlamaParse (Preview)
 
-LlamaParse is an API created by LlamaIndex to effeciently parse and represent files for effecient retrieval and context augmentation using LlamaIndex frameworks.
+LlamaParse is an API created by LlamaIndex to efficiently parse and represent files for efficient retrieval and context augmentation using LlamaIndex frameworks.
 
 LlamaParse directly integrates with [LlamaIndex](https://github.com/run-llama/llama_index).
 
@@ -62,7 +62,7 @@ Full documentation for `SimpleDirectoryReader` can be found on the [LlamaIndex D
 
 ## Examples
 
-Serveral end-to-end indexing examples can be found in the examples folder
+Several end-to-end indexing examples can be found in the examples folder
 
 - [Getting Started](examples/demo_basic.ipynb)
 - [Advanced RAG Example](examples/demo_advanced.ipynb)
