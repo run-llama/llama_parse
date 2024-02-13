@@ -93,7 +93,7 @@ class LlamaParse(BasePydanticReader):
             async with httpx.AsyncClient(timeout=self.max_timeout) as client:    
                 result = await client.get(result_url, headers=headers)
 
-                if not result.is_success:
+                if result.status_code == 404:
                     end = time.time()
                     if end - start > self.max_timeout:
                         raise Exception(
@@ -102,6 +102,10 @@ class LlamaParse(BasePydanticReader):
                     if self.verbose and tries % 10 == 0:
                         print(".", end="", flush=True)
                     continue
+
+                if result.status_code == 400:
+                    detail = result.json().get("detail", "Unknown error")
+                    raise Exception(f"Failed to parse the PDF file: {detail}")
 
                 return [
                     Document(
