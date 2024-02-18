@@ -59,6 +59,7 @@ class LlamaParse(BasePydanticReader):
         """Validate the base URL."""
         if os.getenv("LLAMA_CLOUD_BASE_URL", DEFAULT_BASE_URL):
             return os.getenv("LLAMA_CLOUD_BASE_URL")
+        return v or DEFAULT_BASE_URL
 
     def load_data(self, file_path: str, extra_info: Optional[dict] = None) -> List[Document]:
         """Load data from the input path."""
@@ -81,7 +82,7 @@ class LlamaParse(BasePydanticReader):
             files = {"file": (f.name, f, mime_type)}
 
             # send the request, start job
-            url = f"{self.base_url}/upload"
+            url = f"{self.base_url}/api/parsing/upload"
             async with httpx.AsyncClient(timeout=self.max_timeout) as client:
                 response = await client.post(url, files=files, headers=headers)
                 if not response.is_success:
@@ -92,7 +93,7 @@ class LlamaParse(BasePydanticReader):
         if self.verbose:
             print("Started parsing the file under job_id %s" % job_id)
         
-        result_url = f"{self.base_url}/job/{job_id}/result/{self.result_type.value}"
+        result_url = f"{self.base_url}/api/parsing/job/{job_id}/result/{self.result_type.value}"
 
         start = time.time()
         tries = 0
