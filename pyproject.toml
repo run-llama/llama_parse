@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "llama-parse"
-version = "0.2.1"
+version = "0.2.2"
 description = "Parse files into RAG-Optimized formats."
 authors = ["Logan Markewich <logan@llamaindex.ai>"]
 license = "MIT"
@@ -9,7 +9,7 @@ packages = [{include = "llama_parse"}]
 
 [tool.poetry.dependencies]
 python = ">=3.8.1,<4.0"
-llama-index-core = "^0.10.0"
+llama-index-core = ">=0.10.6.post1"
 
 
 [tool.poetry.group.dev.dependencies]
