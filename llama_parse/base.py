@@ -1,3 +1,4 @@
+import os
 import asyncio
 import httpx
 import mimetypes
@@ -6,6 +7,7 @@ from enum import Enum
 from typing import List, Optional
 
 from llama_index.core.bridge.pydantic import Field, validator
+from llama_index.core.constants import DEFAULT_BASE_URL
 from llama_index.core.readers.base import BasePydanticReader
 from llama_index.core.schema import Document
 
@@ -22,7 +24,7 @@ class LlamaParse(BasePydanticReader):
 
     api_key: str = Field(default="", description="The API key for the LlamaParse API.")
     base_url: str = Field(
-        default="https://api.cloud.llamaindex.ai/api/parsing",
+        default=DEFAULT_BASE_URL,
         description="The base URL of the Llama Parsing API.",
     )
     result_type: ResultType = Field(
@@ -51,6 +53,12 @@ class LlamaParse(BasePydanticReader):
             return api_key
         
         return v
+    
+    @validator("base_url", pre=True, always=True)
+    def validate_base_url(cls, v: str) -> str:
+        """Validate the base URL."""
+        if os.getenv("LLAMA_CLOUD_BASE_URL", DEFAULT_BASE_URL):
+            return os.getenv("LLAMA_CLOUD_BASE_URL")
 
     def load_data(self, file_path: str, extra_info: Optional[dict] = None) -> List[Document]:
         """Load data from the input path."""
