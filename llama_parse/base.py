@@ -57,9 +57,8 @@ class LlamaParse(BasePydanticReader):
     @validator("base_url", pre=True, always=True)
     def validate_base_url(cls, v: str) -> str:
         """Validate the base URL."""
-        if os.getenv("LLAMA_CLOUD_BASE_URL", DEFAULT_BASE_URL):
-            return os.getenv("LLAMA_CLOUD_BASE_URL") or DEFAULT_BASE_URL
-        return v or DEFAULT_BASE_URL
+        url = os.getenv("LLAMA_CLOUD_BASE_URL", None)
+        return url or v or DEFAULT_BASE_URL
 
     def load_data(self, file_path: str, extra_info: Optional[dict] = None) -> List[Document]:
         """Load data from the input path."""
