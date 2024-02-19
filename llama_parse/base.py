@@ -1,3 +1,4 @@
+import os
 import asyncio
 import httpx
 import mimetypes
@@ -6,6 +7,7 @@ from enum import Enum
 from typing import List, Optional
 
 from llama_index.core.bridge.pydantic import Field, validator
+from llama_index.core.constants import DEFAULT_BASE_URL
 from llama_index.core.readers.base import BasePydanticReader
 from llama_index.core.schema import Document
 
@@ -22,7 +24,7 @@ class LlamaParse(BasePydanticReader):
 
     api_key: str = Field(default="", description="The API key for the LlamaParse API.")
     base_url: str = Field(
-        default="https://api.cloud.llamaindex.ai/api/parsing",
+        default=DEFAULT_BASE_URL,
         description="The base URL of the Llama Parsing API.",
     )
     result_type: ResultType = Field(
@@ -51,6 +53,12 @@ class LlamaParse(BasePydanticReader):
             return api_key
         
         return v
+    
+    @validator("base_url", pre=True, always=True)
+    def validate_base_url(cls, v: str) -> str:
+        """Validate the base URL."""
+        url = os.getenv("LLAMA_CLOUD_BASE_URL", None)
+        return url or v or DEFAULT_BASE_URL
 
     def load_data(self, file_path: str, extra_info: Optional[dict] = None) -> List[Document]:
         """Load data from the input path."""
@@ -73,7 +81,7 @@ class LlamaParse(BasePydanticReader):
             files = {"file": (f.name, f, mime_type)}
 
             # send the request, start job
-            url = f"{self.base_url}/upload"
+            url = f"{self.base_url}/api/parsing/upload"
             async with httpx.AsyncClient(timeout=self.max_timeout) as client:
                 response = await client.post(url, files=files, headers=headers)
                 if not response.is_success:
@@ -84,7 +92,7 @@ class LlamaParse(BasePydanticReader):
         if self.verbose:
             print("Started parsing the file under job_id %s" % job_id)
         
-        result_url = f"{self.base_url}/job/{job_id}/result/{self.result_type.value}"
+        result_url = f"{self.base_url}/api/parsing/job/{job_id}/result/{self.result_type.value}"
 
         start = time.time()
         tries = 0
