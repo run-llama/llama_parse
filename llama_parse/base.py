@@ -4,13 +4,16 @@ import httpx
 import mimetypes
 import time
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Union
 
+from llama_index.core.async_utils import run_jobs
 from llama_index.core.bridge.pydantic import Field, validator
 from llama_index.core.constants import DEFAULT_BASE_URL
 from llama_index.core.readers.base import BasePydanticReader
 from llama_index.core.schema import Document
 
+nest_asyncio_err = "cannot be called from a running event loop"
+nest_asyncio_msg = "The event loop is already running. Add `import nest_asyncio; nest_asyncio.apply()` to your code to fix this issue."
 
 class ResultType(str, Enum):
     """The result type for the parser."""
@@ -29,6 +32,12 @@ class LlamaParse(BasePydanticReader):
     )
     result_type: ResultType = Field(
         default=ResultType.TXT, description="The result type for the parser."
+    )
+    num_workers: int = Field(
+        default=4,
+        gt=0,
+        lt=10, 
+        description="The number of workers to use sending API requests for parsing."
     )
     check_interval: int = Field(
         default=1,
@@ -60,65 +69,95 @@ class LlamaParse(BasePydanticReader):
         url = os.getenv("LLAMA_CLOUD_BASE_URL", None)
         return url or v or DEFAULT_BASE_URL
 
-    def load_data(self, file_path: str, extra_info: Optional[dict] = None) -> List[Document]:
+    async def _aload_data(self, file_path: str, extra_info: Optional[dict] = None) -> List[Document]:
         """Load data from the input path."""
-        return asyncio.run(self.aload_data(file_path, extra_info))
+        try:
+            file_path = str(file_path)
+            if not file_path.endswith(".pdf"):
+                raise Exception("Currently, only PDF files are supported.")
 
-    async def aload_data(self, file_path: str, extra_info: Optional[dict] = None) -> List[Document]:
-        """Load data from the input path."""
-        file_path = str(file_path)
-        if not file_path.endswith(".pdf"):
-            raise Exception("Currently, only PDF files are supported.")
+            extra_info = extra_info or {}
+            extra_info["file_path"] = file_path
 
-        extra_info = extra_info or {}
-        extra_info["file_path"] = file_path
+            headers = {"Authorization": f"Bearer {self.api_key}"}
 
-        headers = {"Authorization": f"Bearer {self.api_key}"}
+            # load data, set the mime type
+            with open(file_path, "rb") as f:
+                mime_type = mimetypes.guess_type(file_path)[0]
+                files = {"file": (f.name, f, mime_type)}
 
-        # load data, set the mime type
-        with open(file_path, "rb") as f:
-            mime_type = mimetypes.guess_type(file_path)[0]
-            files = {"file": (f.name, f, mime_type)}
+                # send the request, start job
+                url = f"{self.base_url}/api/parsing/upload"
+                async with httpx.AsyncClient(timeout=self.max_timeout) as client:
+                    response = await client.post(url, files=files, headers=headers)
+                    if not response.is_success:
+                        raise Exception(f"Failed to parse the PDF file: {response.text}")
 
-            # send the request, start job
-            url = f"{self.base_url}/api/parsing/upload"
-            async with httpx.AsyncClient(timeout=self.max_timeout) as client:
-                response = await client.post(url, files=files, headers=headers)
-                if not response.is_success:
-                    raise Exception(f"Failed to parse the PDF file: {response.text}")
+            # check the status of the job, return when done
+            job_id = response.json()["id"]
+            if self.verbose:
+                print("Started parsing the file under job_id %s" % job_id)
+            
+            result_url = f"{self.base_url}/api/parsing/job/{job_id}/result/{self.result_type.value}"
 
-        # check the status of the job, return when done
-        job_id = response.json()["id"]
-        if self.verbose:
-            print("Started parsing the file under job_id %s" % job_id)
-        
-        result_url = f"{self.base_url}/api/parsing/job/{job_id}/result/{self.result_type.value}"
+            start = time.time()
+            tries = 0
+            while True:
+                await asyncio.sleep(self.check_interval)
+                async with httpx.AsyncClient(timeout=self.max_timeout) as client: 
+                    tries += 1   
+                    
+                    result = await client.get(result_url, headers=headers)
 
-        start = time.time()
-        tries = 0
-        while True:
-            await asyncio.sleep(self.check_interval)
-            async with httpx.AsyncClient(timeout=self.max_timeout) as client:    
-                result = await client.get(result_url, headers=headers)
+                    if result.status_code == 404:
+                        end = time.time()
+                        if end - start > self.max_timeout:
+                            raise Exception(
+                                f"Timeout while parsing the PDF file: {response.text}"
+                            )
+                        if self.verbose and tries % 10 == 0:
+                            print(".", end="", flush=True)
+                        continue
 
-                if result.status_code == 404:
-                    end = time.time()
-                    if end - start > self.max_timeout:
-                        raise Exception(
-                            f"Timeout while parsing the PDF file: {response.text}"
+                    if result.status_code == 400:
+                        detail = result.json().get("detail", "Unknown error")
+                        raise Exception(f"Failed to parse the PDF file: {detail}")
+
+                    return [
+                        Document(
+                            text=result.json()[self.result_type.value],
+                            metadata=extra_info,
                         )
-                    if self.verbose and tries % 10 == 0:
-                        print(".", end="", flush=True)
-                    continue
+                    ]
+        except Exception as e:
+            print("Error while parsing the PDF file: ", e)
+            return []
+    
+    async def aload_data(self, file_path: Union[List[str], str], extra_info: Optional[dict] = None) -> List[Document]:
+        """Load data from the input path."""
+        if isinstance(file_path, str):
+            return await self._aload_data(file_path, extra_info=extra_info)
+        elif isinstance(file_path, list):
+            jobs = [self._aload_data(f, extra_info=extra_info) for f in file_path]
+            try:
+                results = await run_jobs(jobs, workers=self.num_workers)
+                
+                # return flattened results
+                return [item for sublist in results for item in sublist]
+            except RuntimeError as e:
+                if nest_asyncio_err in str(e):
+                    raise RuntimeError(nest_asyncio_msg)
+                else:
+                    raise e
+        else:
+            raise ValueError("The input file_path must be a string or a list of strings.")
 
-                if result.status_code == 400:
-                    detail = result.json().get("detail", "Unknown error")
-                    raise Exception(f"Failed to parse the PDF file: {detail}")
-
-                return [
-                    Document(
-                        text=result.json()[self.result_type.value],
-                        metadata=extra_info,
-                    )
-                ]
-            tries += 1
+    def load_data(self, file_path: Union[List[str], str], extra_info: Optional[dict] = None) -> List[Document]:
+        """Load data from the input path."""
+        try:
+            return asyncio.run(self.aload_data(file_path, extra_info))
+        except RuntimeError as e:
+            if nest_asyncio_err in str(e):
+                raise RuntimeError(nest_asyncio_msg)
+            else:
+                raise e
