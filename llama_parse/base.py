@@ -4,6 +4,7 @@ import httpx
 import mimetypes
 import time
 from enum import Enum
+from pathlib import Path
 from typing import List, Optional, Union
 
 from llama_index.core.async_utils import run_jobs
@@ -135,7 +136,7 @@ class LlamaParse(BasePydanticReader):
     
     async def aload_data(self, file_path: Union[List[str], str], extra_info: Optional[dict] = None) -> List[Document]:
         """Load data from the input path."""
-        if isinstance(file_path, str):
+        if isinstance(file_path, (str, Path)):
             return await self._aload_data(file_path, extra_info=extra_info)
         elif isinstance(file_path, list):
             jobs = [self._aload_data(f, extra_info=extra_info) for f in file_path]
