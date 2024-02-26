@@ -51,6 +51,9 @@ class LlamaParse(BasePydanticReader):
     verbose: bool = Field(
         default=True, description="Whether to print the progress of the parsing."
     )
+    language: Optional[str] = Field(
+        default="en", description="The language of the text to parse."
+    )
 
     @validator("api_key", pre=True, always=True)
     def validate_api_key(cls, v: str) -> str:
@@ -90,7 +93,7 @@ class LlamaParse(BasePydanticReader):
                 # send the request, start job
                 url = f"{self.base_url}/api/parsing/upload"
                 async with httpx.AsyncClient(timeout=self.max_timeout) as client:
-                    response = await client.post(url, files=files, headers=headers)
+                    response = await client.post(url, files=files, headers=headers, data={"language": self.language})
                     if not response.is_success:
                         raise Exception(f"Failed to parse the PDF file: {response.text}")
 
