@@ -219,7 +219,7 @@ class LlamaParse(BasePydanticReader):
                         )
                     ]
         except Exception as e:
-            print("Error while parsing the PDF file: ", e)
+            print(f"Error while parsing the PDF file '{file_path}':", e)
             return []
     
     async def aload_data(self, file_path: Union[List[str], str], extra_info: Optional[dict] = None) -> List[Document]:
