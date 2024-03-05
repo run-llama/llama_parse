@@ -21,6 +21,7 @@ class ResultType(str, Enum):
 
     TXT = "text"
     MD = "markdown"
+    JSON = "json"
 
 class Language(str, Enum):
     BAZA = "abq"
@@ -139,6 +140,10 @@ class LlamaParse(BasePydanticReader):
     language: Optional[str] = Field(
          default=Language.ENGLISH, description="The language of the text to parse."
     )
+    pasing_instruction: Optional[str] = Field(
+        default="",
+        description="The parsing instruction for the parser."
+    )
 
     @validator("api_key", pre=True, always=True)
     def validate_api_key(cls, v: str) -> str:
@@ -178,7 +183,7 @@ class LlamaParse(BasePydanticReader):
                 # send the request, start job
                 url = f"{self.base_url}/api/parsing/upload"
                 async with httpx.AsyncClient(timeout=self.max_timeout) as client:
-                    response = await client.post(url, files=files, headers=headers, data={"language": self.language})
+                    response = await client.post(url, files=files, headers=headers, data={"language": self.language, "parsing_instruction": self.parsing_instruction})
                     if not response.is_success:
                         raise Exception(f"Failed to parse the PDF file: {response.text}")
 
