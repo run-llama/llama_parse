@@ -280,14 +280,11 @@ class LlamaParse(BasePydanticReader):
             result = await self._get_job_result(job_id, "json")
             result["job_id"] = job_id
             result["file_path"] = file_path
-            return [
-               result
-            ]
+            return [result]
           
         except Exception as e:
             print(f"Error while parsing the PDF file '{file_path}':", e)
             raise e
-            return []
         
     
 
@@ -321,7 +318,7 @@ class LlamaParse(BasePydanticReader):
             else:
                 raise e
             
-    def get_images(self, json_result: list[dict], download_path: str) -> List[str]:
+    def get_images(self, json_result: list[dict], download_path: str) -> List[dict]:
         """Download images from the parsed result."""
         headers = {"Authorization": f"Bearer {self.api_key}"}
         try:
@@ -329,7 +326,8 @@ class LlamaParse(BasePydanticReader):
             for result in json_result:
                 job_id = result["job_id"]
                 for page in result["pages"]:
-                    print(page["images"])
+                    if self.verbose:
+                        print(f"> Image for page {page['page']}: {page['images']}")
                     for image in page["images"]:
                         image_name = image["name"]
                         image_path = os.path.join(download_path, f"{job_id}-{image_name}")
