@@ -136,7 +136,7 @@ class LlamaParse(BasePydanticReader):
     verbose: bool = Field(
         default=True, description="Whether to print the progress of the parsing."
     )
-    language: Optional[str] = Field(
+    language: Language  = Field(
          default=Language.ENGLISH, description="The language of the text to parse."
     )
     parsing_instruction: Optional[str] = Field(
