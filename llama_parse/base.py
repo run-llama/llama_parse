@@ -229,8 +229,8 @@ class LlamaParse(BasePydanticReader):
 
             return [
                 Document(
-                    text=result.json()[self.result_type.value],
-                    metadata=extra_info,
+                    text=result[self.result_type.value],
+                    metadata=extra_info or {},
                 )
             ]
           
