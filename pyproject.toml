@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "llama-parse"
-version = "0.3.8"
+version = "0.3.9"
 description = "Parse files into RAG-Optimized formats."
 authors = ["Logan Markewich <logan@llamaindex.ai>"]
 license = "MIT"
