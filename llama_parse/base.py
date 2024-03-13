@@ -109,14 +109,13 @@ class Language(str, Enum):
 
 
 SUPPORTED_FILE_TYPES = [
+    ".pdf",
     ".xml"
     ".doc",
     ".docx",
     ".pptx",
     ".rtf",
     ".pages",
-    ".htm",
-    ".html"
 ]
 
 
