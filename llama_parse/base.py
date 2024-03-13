@@ -116,6 +116,8 @@ SUPPORTED_FILE_TYPES = [
     ".pptx",
     ".rtf",
     ".pages",
+    ".key",
+    ".epub"
 ]
 
 
