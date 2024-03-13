@@ -4,9 +4,8 @@ LlamaParse is an API created by LlamaIndex to efficiently parse and represent fi
 
 LlamaParse directly integrates with [LlamaIndex](https://github.com/run-llama/llama_index).
 
-Currently available in preview mode for **free**. Try it out today!
 
-**NOTE:** Currently, only PDF files are supported.
+Free plan is up to 1000 pages a day. Paid plan is free 7k pages per week + 0.3c per additional page.
 
 ## Getting Started
 
