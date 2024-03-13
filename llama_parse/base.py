@@ -108,6 +108,18 @@ class Language(str, Enum):
     VIETNAMESE = "vi"
 
 
+SUPPORTED_FILE_TYPES = [
+    ".xml"
+    ".doc",
+    ".docx",
+    ".pptx",
+    ".rtf",
+    ".pages",
+    ".htm",
+    ".html"
+]
+
+
 class LlamaParse(BasePydanticReader):
     """A smart-parser for files."""
 
@@ -165,8 +177,12 @@ class LlamaParse(BasePydanticReader):
     # upload a document and get back a job_id
     async def _create_job(self, file_path: str, extra_info: Optional[dict] = None) -> str:
         file_path = str(file_path)
-        if not file_path.endswith(".pdf"):
-            raise Exception("Currently, only PDF files are supported.")
+        file_ext = os.path.splitext(file_path)[1]
+        if file_ext not in SUPPORTED_FILE_TYPES:
+            raise Exception(
+                f"Currently, only the following file types are supported: {SUPPORTED_FILE_TYPES}\n"
+                f"Current file type: {file_ext}"
+            )
 
         extra_info = extra_info or {}
         extra_info["file_path"] = file_path
@@ -183,7 +199,7 @@ class LlamaParse(BasePydanticReader):
             async with httpx.AsyncClient(timeout=self.max_timeout) as client:
                 response = await client.post(url, files=files, headers=headers, data={"language": self.language.value, "parsing_instruction": self.parsing_instruction})
                 if not response.is_success:
-                    raise Exception(f"Failed to parse the PDF file: {response.text}")
+                    raise Exception(f"Failed to parse the file: {response.text}")
 
         # check the status of the job, return when done
         job_id = response.json()["id"]
@@ -206,7 +222,7 @@ class LlamaParse(BasePydanticReader):
                     end = time.time()
                     if end - start > self.max_timeout:
                         raise Exception(
-                            f"Timeout while parsing the PDF file: {job_id}"
+                            f"Timeout while parsing the file: {job_id}"
                         )
                     if self.verbose and tries % 10 == 0:
                         print(".", end="", flush=True)
@@ -214,7 +230,7 @@ class LlamaParse(BasePydanticReader):
 
                 if result.status_code == 400:
                     detail = result.json().get("detail", "Unknown error")
-                    raise Exception(f"Failed to parse the PDF file: {detail}")
+                    raise Exception(f"Failed to parse the file: {detail}")
 
                 return result.json()
 
@@ -235,7 +251,7 @@ class LlamaParse(BasePydanticReader):
             ]
           
         except Exception as e:
-            print(f"Error while parsing the PDF file '{file_path}':", e)
+            print(f"Error while parsing the file '{file_path}':", e)
             raise e
             return []
     
@@ -283,7 +299,7 @@ class LlamaParse(BasePydanticReader):
             return [result]
           
         except Exception as e:
-            print(f"Error while parsing the PDF file '{file_path}':", e)
+            print(f"Error while parsing the file '{file_path}':", e)
             raise e
         
     
