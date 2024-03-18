@@ -3,7 +3,6 @@ import asyncio
 import httpx
 import mimetypes
 import time
-from enum import Enum
 from pathlib import Path
 from typing import List, Optional, Union
 
