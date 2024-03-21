@@ -21,6 +21,7 @@ class ResultType(str, Enum):
     """The result type for the parser."""
     TXT = "text"
     MD = "markdown"
+    JSON = "json"
 
 class Language(str, Enum):
     BAZA = "abq"
@@ -110,13 +111,60 @@ class Language(str, Enum):
 
 SUPPORTED_FILE_TYPES = [
     ".pdf",
-    ".xml"
+    # Microsoft word - all versions
     ".doc",
     ".docx",
-    ".pptx",
+    ".docm",
+    ".dot",
+    ".dotx",
+    ".dotm",
+    # Rich text format
     ".rtf",
+    # Microsoft Works
+    ".wps",
+    # Word Perfect
+    ".wpd",
+
+    # Open Office
+    ".sxw",
+    ".stw", 
+    ".sxg",
+
+    # Apple
     ".pages",
+
+    # Mac Write
+    ".mw",
+    ".mcw",
+
+
+    # Unified Office Format text
+    ".uot",
+    ".uof",
+    ".uos",
+    ".uop",
+
+    # Microsoft powerpoints
+    ".ppt",
+    ".pptx",
+    ".pot",
+    ".pptm",
+    ".potx",
+    ".potm",
+
+
+    # Apple keynote
     ".key",
+
+    # Open Office Presentations
+    ".odp",
+    ".odg",
+    ".otp",
+    ".fopd",
+    ".sxi", 
+    ".sti",
+    
+    # ebook
     ".epub"
 ]
 
