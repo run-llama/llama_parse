@@ -9,7 +9,7 @@ packages = [{include = "llama_parse"}]
 
 [tool.poetry.dependencies]
 python = ">=3.8.1,<4.0"
-llama-index-core = ">=0.10.7"
+llama-index-core = ">=0.10.23"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
