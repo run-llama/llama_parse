@@ -332,7 +332,7 @@ class LlamaParse(BasePydanticReader):
     def load_data(self, file_path: Union[List[str], str, PurePath, List[PurePath]], extra_info: Optional[dict] = None, fs: Optional[AbstractFileSystem] = None,) -> List[Document]:
         """Load data from the input path."""
         try:
-            return asyncio.run(self.aload_data(file_path, extra_info))
+            return asyncio.run(self.aload_data(file_path, extra_info, fs=fs))
         except RuntimeError as e:
             if nest_asyncio_err in str(e):
                 raise RuntimeError(nest_asyncio_msg)
