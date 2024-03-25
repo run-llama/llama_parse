@@ -1,5 +1,7 @@
 import os
 import asyncio
+from io import TextIOWrapper
+
 import httpx
 import mimetypes
 import time
@@ -8,6 +10,7 @@ from pathlib import Path, PurePath
 from typing import List, Optional, Union
 
 from fsspec import AbstractFileSystem
+from fsspec.spec import AbstractBufferedFile
 from llama_index.core.async_utils import run_jobs
 from llama_index.core.bridge.pydantic import Field, validator
 from llama_index.core.constants import DEFAULT_BASE_URL
@@ -246,7 +249,7 @@ class LlamaParse(BasePydanticReader):
         fs = fs or get_default_fs()
         with fs.open(file_path, "rb") as f:
             mime_type = mimetypes.guess_type(str_file_path)[0]
-            files = {"file": (f.name, f, mime_type)}
+            files = {"file": (self.__get_filename(f), f, mime_type)}
 
             # send the request, start job
             url = f"{self.base_url}/api/parsing/upload"
@@ -258,6 +261,12 @@ class LlamaParse(BasePydanticReader):
         # check the status of the job, return when done
         job_id = response.json()["id"]
         return job_id
+
+    @staticmethod
+    def __get_filename(f: TextIOWrapper | AbstractBufferedFile) -> str:
+        if isinstance(f, TextIOWrapper):
+            return f.name
+        return f.full_name
 
     async def _get_job_result(self, job_id: str, result_type: str) -> dict:
         result_url = f"{self.base_url}/api/parsing/job/{job_id}/result/{result_type}"
