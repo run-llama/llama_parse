@@ -4,7 +4,7 @@ import httpx
 import mimetypes
 import time
 from enum import Enum
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import List, Optional, Union
 
 from fsspec import AbstractFileSystem
@@ -129,7 +129,7 @@ SUPPORTED_FILE_TYPES = [
 
     # Open Office
     ".sxw",
-    ".stw", 
+    ".stw",
     ".sxg",
 
     # Apple
@@ -163,9 +163,9 @@ SUPPORTED_FILE_TYPES = [
     ".odg",
     ".otp",
     ".fopd",
-    ".sxi", 
+    ".sxi",
     ".sti",
-    
+
     # ebook
     ".epub"
 ]
@@ -185,7 +185,7 @@ class LlamaParse(BasePydanticReader):
     num_workers: int = Field(
         default=4,
         gt=0,
-        lt=10, 
+        lt=10,
         description="The number of workers to use sending API requests for parsing."
     )
     check_interval: int = Field(
@@ -216,9 +216,9 @@ class LlamaParse(BasePydanticReader):
             if api_key is None:
                 raise ValueError("The API key is required.")
             return api_key
-        
+
         return v
-    
+
     @validator("base_url", pre=True, always=True)
     def validate_base_url(cls, v: str) -> str:
         """Validate the base URL."""
@@ -226,9 +226,11 @@ class LlamaParse(BasePydanticReader):
         return url or v or DEFAULT_BASE_URL
 
     # upload a document and get back a job_id
-    async def _create_job(self, file_path: str, extra_info: Optional[dict] = None, fs: Optional[AbstractFileSystem] = None,) -> str:
-        file_path = str(file_path)
-        file_ext = os.path.splitext(file_path)[1]
+    async def _create_job(self, file_path: str | PurePath, extra_info: Optional[dict] = None, fs: Optional[AbstractFileSystem] = None,) -> str:
+        str_file_path = file_path
+        if isinstance(file_path, PurePath):
+            str_file_path = file_path.name
+        file_ext = os.path.splitext(str_file_path)[1]
         if file_ext not in SUPPORTED_FILE_TYPES:
             raise Exception(
                 f"Currently, only the following file types are supported: {SUPPORTED_FILE_TYPES}\n"
@@ -236,14 +238,14 @@ class LlamaParse(BasePydanticReader):
             )
 
         extra_info = extra_info or {}
-        extra_info["file_path"] = file_path
+        extra_info["file_path"] = str_file_path
 
         headers = {"Authorization": f"Bearer {self.api_key}"}
 
         # load data, set the mime type
         fs = fs or get_default_fs()
         with fs.open(file_path, "rb") as f:
-            mime_type = mimetypes.guess_type(file_path)[0]
+            mime_type = mimetypes.guess_type(str_file_path)[0]
             files = {"file": (f.name, f, mime_type)}
 
             # send the request, start job
@@ -265,9 +267,9 @@ class LlamaParse(BasePydanticReader):
         tries = 0
         while True:
             await asyncio.sleep(self.check_interval)
-            async with httpx.AsyncClient(timeout=self.max_timeout) as client: 
-                tries += 1   
-                
+            async with httpx.AsyncClient(timeout=self.max_timeout) as client:
+                tries += 1
+
                 result = await client.get(result_url, headers=headers)
 
                 if result.status_code == 404:
@@ -286,13 +288,13 @@ class LlamaParse(BasePydanticReader):
 
                 return result.json()
 
-    async def _aload_data(self, file_path: str, extra_info: Optional[dict] = None, fs: Optional[AbstractFileSystem] = None,) -> List[Document]:
+    async def _aload_data(self, file_path: str | PurePath, extra_info: Optional[dict] = None, fs: Optional[AbstractFileSystem] = None,) -> List[Document]:
         """Load data from the input path."""
         try:
             job_id = await self._create_job(file_path, extra_info=extra_info, fs=fs)
             if self.verbose:
                 print("Started parsing the file under job_id %s" % job_id)
-            
+
             result = await self._get_job_result(job_id, self.result_type.value)
 
             return [
@@ -301,22 +303,22 @@ class LlamaParse(BasePydanticReader):
                     metadata=extra_info or {},
                 )
             ]
-          
+
         except Exception as e:
             print(f"Error while parsing the file '{file_path}':", e)
             raise e
             return []
-    
 
-    async def aload_data(self, file_path: Union[List[str], str], extra_info: Optional[dict] = None, fs: Optional[AbstractFileSystem] = None,) -> List[Document]:
+
+    async def aload_data(self, file_path: Union[List[str], str, PurePath, List[PurePath]], extra_info: Optional[dict] = None, fs: Optional[AbstractFileSystem] = None,) -> List[Document]:
         """Load data from the input path."""
-        if isinstance(file_path, (str, Path)):
+        if isinstance(file_path, (str, PurePath)):
             return await self._aload_data(file_path, extra_info=extra_info, fs=fs)
         elif isinstance(file_path, list):
             jobs = [self._aload_data(f, extra_info=extra_info, fs=fs) for f in file_path]
             try:
                 results = await run_jobs(jobs, workers=self.num_workers)
-                
+
                 # return flattened results
                 return [item for sublist in results for item in sublist]
             except RuntimeError as e:
@@ -327,7 +329,7 @@ class LlamaParse(BasePydanticReader):
         else:
             raise ValueError("The input file_path must be a string or a list of strings.")
 
-    def load_data(self, file_path: Union[List[str], str], extra_info: Optional[dict] = None, fs: Optional[AbstractFileSystem] = None,) -> List[Document]:
+    def load_data(self, file_path: Union[List[str], str, PurePath, List[PurePath]], extra_info: Optional[dict] = None, fs: Optional[AbstractFileSystem] = None,) -> List[Document]:
         """Load data from the input path."""
         try:
             return asyncio.run(self.aload_data(file_path, extra_info))
@@ -336,7 +338,7 @@ class LlamaParse(BasePydanticReader):
                 raise RuntimeError(nest_asyncio_msg)
             else:
                 raise e
-    
+
 
     async def _aget_json(self, file_path: str, extra_info: Optional[dict] = None) -> List[dict]:
         """Load data from the input path."""
@@ -344,17 +346,17 @@ class LlamaParse(BasePydanticReader):
             job_id = await self._create_job(file_path, extra_info=extra_info)
             if self.verbose:
                 print("Started parsing the file under job_id %s" % job_id)
-            
+
             result = await self._get_job_result(job_id, "json")
             result["job_id"] = job_id
             result["file_path"] = file_path
             return [result]
-          
+
         except Exception as e:
             print(f"Error while parsing the file '{file_path}':", e)
             raise e
-        
-    
+
+
 
     async def aget_json(self, file_path: Union[List[str], str], extra_info: Optional[dict] = None) -> List[dict]:
         """Load data from the input path."""
@@ -364,7 +366,7 @@ class LlamaParse(BasePydanticReader):
             jobs = [self._aget_json(f, extra_info=extra_info) for f in file_path]
             try:
                 results = await run_jobs(jobs, workers=self.num_workers)
-                
+
                 # return flattened results
                 return [item for sublist in results for item in sublist]
             except RuntimeError as e:
@@ -385,7 +387,7 @@ class LlamaParse(BasePydanticReader):
                 raise RuntimeError(nest_asyncio_msg)
             else:
                 raise e
-            
+
     def get_images(self, json_result: list[dict], download_path: str) -> List[dict]:
         """Download images from the parsed result."""
         headers = {"Authorization": f"Bearer {self.api_key}"}
