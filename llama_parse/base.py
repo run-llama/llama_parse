@@ -288,7 +288,7 @@ class LlamaParse(BasePydanticReader):
         try:
             job_id = await self._create_job(file_path, extra_info=extra_info)
             if self.verbose:
-                print("Started parsing the file under job_id %s" % job_id)
+                print(f"Started parsing the file {file_path} under job_id {job_id}")
             
             result = await self._get_job_result(job_id, self.result_type.value)
 
