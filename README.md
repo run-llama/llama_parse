@@ -9,7 +9,7 @@ Free plan is up to 1000 pages a day. Paid plan is free 7k pages per week + 0.3c 
 
 ## Getting Started
 
-First, login and get an api-key from `https://cloud.llamaindex.ai`.
+First, login and get an api-key from [**https://cloud.llamaindex.ai ↗**](https://cloud.llamaindex.ai).
 
 Then, make sure you have the latest LlamaIndex version installed.
 
