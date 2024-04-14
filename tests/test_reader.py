@@ -22,3 +22,25 @@ def test_simple_page_markdown() -> None:
     result = parser.load_data(filepath)
     assert len(result) == 1
     assert len(result[0].text) > 0
+
+
+def test_simple_page_progress_workers() -> None:
+    parser = LlamaParse(result_type="markdown", show_progress=True, verbose=True)
+
+    filepath = os.path.join(
+        os.path.dirname(__file__), "test_files/attention_is_all_you_need.pdf"
+    )
+    result = parser.load_data([filepath, filepath])
+    assert len(result) == 2
+    assert len(result[0].text) > 0
+
+    parser = LlamaParse(
+        result_type="markdown", show_progress=True, num_workers=2, verbose=True
+    )
+
+    filepath = os.path.join(
+        os.path.dirname(__file__), "test_files/attention_is_all_you_need.pdf"
+    )
+    result = parser.load_data([filepath, filepath])
+    assert len(result) == 2
+    assert len(result[0].text) > 0
