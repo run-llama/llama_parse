@@ -4,7 +4,6 @@ LlamaParse is an API created by LlamaIndex to efficiently parse and represent fi
 
 LlamaParse directly integrates with [LlamaIndex](https://github.com/run-llama/llama_index).
 
-
 Free plan is up to 1000 pages a day. Paid plan is free 7k pages per week + 0.3c per additional page.
 
 ## Getting Started
@@ -28,6 +27,7 @@ Now you can run the following to parse your first PDF file:
 
 ```python
 import nest_asyncio
+
 nest_asyncio.apply()
 
 from llama_parse import LlamaParse
@@ -35,9 +35,9 @@ from llama_parse import LlamaParse
 parser = LlamaParse(
     api_key="llx-...",  # can also be set in your env as LLAMA_CLOUD_API_KEY
     result_type="markdown",  # "markdown" and "text" are available
-    num_workers=4, # if multiple files passed, split in `num_workers` API calls
+    num_workers=4,  # if multiple files passed, split in `num_workers` API calls
     verbose=True,
-    language="en" # Optionaly you can define a language, default=en
+    language="en",  # Optionally you can define a language, default=en
 )
 
 # sync
@@ -59,6 +59,7 @@ You can also integrate the parser as the default PDF loader in `SimpleDirectoryR
 
 ```python
 import nest_asyncio
+
 nest_asyncio.apply()
 
 from llama_parse import LlamaParse
@@ -67,11 +68,13 @@ from llama_index.core import SimpleDirectoryReader
 parser = LlamaParse(
     api_key="llx-...",  # can also be set in your env as LLAMA_CLOUD_API_KEY
     result_type="markdown",  # "markdown" and "text" are available
-    verbose=True
+    verbose=True,
 )
 
 file_extractor = {".pdf": parser}
-documents = SimpleDirectoryReader("./data", file_extractor=file_extractor).load_data()
+documents = SimpleDirectoryReader(
+    "./data", file_extractor=file_extractor
+).load_data()
 ```
 
 Full documentation for `SimpleDirectoryReader` can be found on the [LlamaIndex Documentation](https://docs.llamaindex.ai/en/stable/module_guides/loading/simpledirectoryreader.html).
