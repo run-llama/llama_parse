@@ -4,11 +4,14 @@ from enum import Enum
 nest_asyncio_err = "cannot be called from a running event loop"
 nest_asyncio_msg = "The event loop is already running. Add `import nest_asyncio; nest_asyncio.apply()` to your code to fix this issue."
 
+
 class ResultType(str, Enum):
     """The result type for the parser."""
+
     TXT = "text"
     MD = "markdown"
     JSON = "json"
+
 
 class Language(str, Enum):
     BAZA = "abq"
@@ -90,7 +93,7 @@ class Language(str, Enum):
     TAGALOG = "tl"
     TURKISH = "tr"
     UYGHUR = "ug"
-    UKRANIAN = "uk"
+    UKRAINIAN = "uk"
     URDU = "ur"
     UZBEK = "uz"
     VIETNAMESE = "vi"
@@ -111,26 +114,20 @@ SUPPORTED_FILE_TYPES = [
     ".wps",
     # Word Perfect
     ".wpd",
-
     # Open Office
     ".sxw",
-    ".stw", 
+    ".stw",
     ".sxg",
-
     # Apple
     ".pages",
-
     # Mac Write
     ".mw",
     ".mcw",
-
-
     # Unified Office Format text
     ".uot",
     ".uof",
     ".uos",
     ".uop",
-
     # Microsoft powerpoints
     ".ppt",
     ".pptx",
@@ -138,19 +135,15 @@ SUPPORTED_FILE_TYPES = [
     ".pptm",
     ".potx",
     ".potm",
-
-
     # Apple keynote
     ".key",
-
     # Open Office Presentations
     ".odp",
     ".odg",
     ".otp",
     ".fopd",
-    ".sxi", 
+    ".sxi",
     ".sti",
-    
     # ebook
-    ".epub"
+    ".epub",
 ]
