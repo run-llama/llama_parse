@@ -32,7 +32,7 @@ jobs:
           version: ${{ env.POETRY_VERSION }}
       - name: Install deps
         shell: bash
-        run: pip install -e .
+        run: poetry install --with dev
       - name: Run testing
         env:
           CI: true
