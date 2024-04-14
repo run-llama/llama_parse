@@ -1,3 +1,7 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
 [tool.poetry]
 name = "llama-parse"
 version = "0.4.0"
@@ -14,7 +18,3 @@ llama-index-core = ">=0.10.7"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
 ipykernel = "^6.29.0"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
