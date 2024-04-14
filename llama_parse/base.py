@@ -286,6 +286,9 @@ class LlamaParse(BasePydanticReader):
                         raise Exception(f"Timeout while parsing the file: {job_id}")
                     if verbose and tries % 10 == 0:
                         print(".", end="", flush=True)
+
+                    await asyncio.sleep(self.check_interval)
+
                     continue
 
                 # Allowed values "PENDING", "SUCCESS", "ERROR", "CANCELED"
@@ -299,6 +302,9 @@ class LlamaParse(BasePydanticReader):
                         raise Exception(f"Timeout while parsing the file: {job_id}")
                     if verbose and tries % 10 == 0:
                         print(".", end="", flush=True)
+
+                    await asyncio.sleep(self.check_interval)
+
                     continue
                 else:
                     raise Exception(
