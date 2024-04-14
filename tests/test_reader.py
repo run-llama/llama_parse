@@ -1,7 +1,12 @@
 import os
+import pytest
 from llama_parse import LlamaParse
 
 
+@pytest.mark.skipif(
+    os.environ.get("LLAMA_CLOUD_API_KEY", "") == "",
+    reason="LLAMA_CLOUD_API_KEY not set",
+)
 def test_simple_page_text() -> None:
     parser = LlamaParse(result_type="text")
 
@@ -13,6 +18,10 @@ def test_simple_page_text() -> None:
     assert len(result[0].text) > 0
 
 
+@pytest.mark.skipif(
+    os.environ.get("LLAMA_CLOUD_API_KEY", "") == "",
+    reason="LLAMA_CLOUD_API_KEY not set",
+)
 def test_simple_page_markdown() -> None:
     parser = LlamaParse(result_type="markdown")
 
@@ -24,6 +33,10 @@ def test_simple_page_markdown() -> None:
     assert len(result[0].text) > 0
 
 
+@pytest.mark.skipif(
+    os.environ.get("LLAMA_CLOUD_API_KEY", "") == "",
+    reason="LLAMA_CLOUD_API_KEY not set",
+)
 def test_simple_page_progress_workers() -> None:
     parser = LlamaParse(result_type="markdown", show_progress=True, verbose=True)
 
