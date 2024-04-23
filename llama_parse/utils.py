@@ -146,4 +146,7 @@ SUPPORTED_FILE_TYPES = [
     ".sti",
     # ebook
     ".epub",
+    # html
+    ".html",
+    ".htm",
 ]
