@@ -110,16 +110,52 @@ class Language(str, Enum):
 
 SUPPORTED_FILE_TYPES = [
     ".pdf",
-    ".xml"
+    ".602",
+    ".abw",
+    ".cgm",
+    ".cwk",
     ".doc",
     ".docx",
-    ".pptx",
-    ".rtf",
-    ".pages",
+    ".docm",
+    ".dot",
+    ".dotm",
+    ".hwp",
     ".key",
-    ".epub"
+    ".lwp",
+    ".mw",
+    ".mcw",
+    ".pages",
+    ".pbd",
+    ".ppt",
+    ".pptm",
+    ".pptx",
+    ".pot",
+    ".potm",
+    ".potx",
+    ".rtf",
+    ".sda",
+    ".sdd",
+    ".sdp",
+    ".sdw",
+    ".sgl",
+    ".sti",
+    ".sxi",
+    ".sxw",
+    ".stw",
+    ".sxg",
+    ".txt",
+    ".uof",
+    ".uop",
+    ".uot",
+    ".vor",
+    ".wpd", 
+    ".wps",
+    ".xml",
+    ".zabw",
+    ".epub",
+    ".htm",
+    ".html"
 ]
-
 
 class LlamaParse(BasePydanticReader):
     """A smart-parser for files."""
