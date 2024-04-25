@@ -309,6 +309,11 @@ class LlamaParse(BasePydanticReader):
     def get_images(self, json_result: List[dict], download_path: str) -> List[dict]:
         """Download images from the parsed result."""
         headers = {"Authorization": f"Bearer {self.api_key}"}
+
+        # make the download path
+        if not os.path.exists(download_path):
+            os.makedirs(download_path)
+
         try:
             images = []
             for result in json_result:
@@ -318,9 +323,16 @@ class LlamaParse(BasePydanticReader):
                         print(f"> Image for page {page['page']}: {page['images']}")
                     for image in page["images"]:
                         image_name = image["name"]
+
+                        # get the full path
                         image_path = os.path.join(
                             download_path, f"{job_id}-{image_name}"
                         )
+
+                        # get a valid image path
+                        if not image_path.endswith(".png"):
+                            image_path += ".png"
+
                         image["path"] = image_path
                         image["job_id"] = job_id
                         image["original_pdf_path"] = result["file_path"]
