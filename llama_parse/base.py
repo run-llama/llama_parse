@@ -57,6 +57,12 @@ class LlamaParse(BasePydanticReader):
     parsing_instruction: Optional[str] = Field(
         default="", description="The parsing instruction for the parser."
     )
+    skip_diagonal_text: Optional[bool] = Field(
+        default=False, description="If set to true, the parser will ignore diagonal text (when the text rotation in degrees modulo 90 is not 0)."
+    )
+    invalidate_cache: Optional[bool] = Field(
+        default=False, description="If set to true, the cache will be ignored and the document re-processes. All document are kept in cache for 48hours after the job was completed to avoid processing 2 time the same document."
+    )
     ignore_errors: bool = Field(
         default=True,
         description="Whether or not to ignore and skip errors raised during parsing.",
@@ -113,6 +119,8 @@ class LlamaParse(BasePydanticReader):
                     data={
                         "language": self.language.value,
                         "parsing_instruction": self.parsing_instruction,
+                        "invalidate_cache": self.invalidate_cache,
+                        "skip_diagonal_text": self.skip_diagonal_text,
                     },
                 )
                 if not response.is_success:
