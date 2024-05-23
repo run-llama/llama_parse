@@ -64,6 +64,13 @@ class LlamaParse(BasePydanticReader):
     invalidate_cache: Optional[bool] = Field(
         default=False,
         description="If set to true, the cache will be ignored and the document re-processes. All document are kept in cache for 48hours after the job was completed to avoid processing 2 time the same document."
+    gpt4o_mode: bool = Field(
+        default=False,
+        description="Whether to use gpt-4o extract text from documents.",
+    )
+    gpt4o_api_key: Optional[str] = Field(
+        default=None,
+        description="The API key for the GPT-4o API. Lowers the cost of parsing.",
     )
     ignore_errors: bool = Field(
         default=True,
@@ -123,6 +130,8 @@ class LlamaParse(BasePydanticReader):
                         "parsing_instruction": self.parsing_instruction,
                         "invalidate_cache": self.invalidate_cache,
                         "skip_diagonal_text": self.skip_diagonal_text,
+                        "gpt4o_mode": self.gpt4o_mode,
+                        "gpt4o_api_key": self.gpt4o_api_key,
                     },
                 )
                 if not response.is_success:
@@ -341,7 +350,8 @@ class LlamaParse(BasePydanticReader):
 
                         # get a valid image path
                         if not image_path.endswith(".png"):
-                            image_path += ".png"
+                            if not image_path.endswith(".jpg"):
+                                image_path += ".png"
 
                         image["path"] = image_path
                         image["job_id"] = job_id
