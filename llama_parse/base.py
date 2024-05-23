@@ -64,6 +64,7 @@ class LlamaParse(BasePydanticReader):
     invalidate_cache: Optional[bool] = Field(
         default=False,
         description="If set to true, the cache will be ignored and the document re-processes. All document are kept in cache for 48hours after the job was completed to avoid processing 2 time the same document."
+    )
     gpt4o_mode: bool = Field(
         default=False,
         description="Whether to use gpt-4o extract text from documents.",
