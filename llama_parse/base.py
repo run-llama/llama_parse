@@ -59,11 +59,11 @@ class LlamaParse(BasePydanticReader):
     )
     skip_diagonal_text: Optional[bool] = Field(
         default=False,
-        description="If set to true, the parser will ignore diagonal text (when the text rotation in degrees modulo 90 is not 0)."
+        description="If set to true, the parser will ignore diagonal text (when the text rotation in degrees modulo 90 is not 0).",
     )
     invalidate_cache: Optional[bool] = Field(
         default=False,
-        description="If set to true, the cache will be ignored and the document re-processes. All document are kept in cache for 48hours after the job was completed to avoid processing 2 time the same document."
+        description="If set to true, the cache will be ignored and the document re-processes. All document are kept in cache for 48hours after the job was completed to avoid processing 2 time the same document.",
     )
     gpt4o_mode: bool = Field(
         default=False,
