@@ -65,6 +65,10 @@ class LlamaParse(BasePydanticReader):
         default=None,
         description="The API key for the GPT-4o API. Lowers the cost of parsing.",
     )
+    fast_mode: bool = Field(
+        default=False,
+        description="Super fast mode for parsing. Only output Text, do not extract tables, images, etc.",
+    )
     ignore_errors: bool = Field(
         default=True,
         description="Whether or not to ignore and skip errors raised during parsing.",
@@ -121,6 +125,7 @@ class LlamaParse(BasePydanticReader):
                     data={
                         "language": self.language.value,
                         "parsing_instruction": self.parsing_instruction,
+                        "fast_mode": self.fast_mode,
                         "gpt4o_mode": self.gpt4o_mode,
                         "gpt4o_api_key": self.gpt4o_api_key,
                     },
