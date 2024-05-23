@@ -341,7 +341,8 @@ class LlamaParse(BasePydanticReader):
 
                         # get a valid image path
                         if not image_path.endswith(".png"):
-                            image_path += ".png"
+                            if not image_path.endswith(".jpg"):
+                                image_path += ".png"
 
                         image["path"] = image_path
                         image["job_id"] = job_id
