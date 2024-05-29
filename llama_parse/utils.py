@@ -149,4 +149,11 @@ SUPPORTED_FILE_TYPES = [
     # html
     ".html",
     ".htm",
+    # media,
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".tiff",
+    ".gif",
+    ".svg",
 ]
