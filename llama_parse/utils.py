@@ -100,6 +100,7 @@ class Language(str, Enum):
 
 
 SUPPORTED_FILE_TYPES = [
+    ".pdf",
     # document and presentations
     ".602",
     ".abw",
