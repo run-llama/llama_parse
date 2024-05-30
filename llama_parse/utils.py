@@ -139,7 +139,7 @@ SUPPORTED_FILE_TYPES = [
     ".uop",
     ".uot",
     ".vor",
-    ".wpd", 
+    ".wpd",
     ".wps",
     ".xml",
     ".zabw",
@@ -188,5 +188,5 @@ SUPPORTED_FILE_TYPES = [
     ".qpw",
     ".xlr",
     ".eth",
-    ".tsv"
+    ".tsv",
 ]

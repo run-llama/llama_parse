@@ -72,7 +72,7 @@ repos:
         args:
           [
             "--ignore-words-list",
-            "astroid,gallary,momento,narl,ot,rouge,nin,gere,te,inh",
+            "astroid,gallary,momento,narl,ot,rouge,nin,gere,te,inh,vor",
           ]
   - repo: https://github.com/srstevenson/nb-clean
     rev: 3.1.0
