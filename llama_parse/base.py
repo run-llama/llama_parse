@@ -65,6 +65,22 @@ class LlamaParse(BasePydanticReader):
         default=False,
         description="If set to true, the cache will be ignored and the document re-processes. All document are kept in cache for 48hours after the job was completed to avoid processing 2 time the same document.",
     )
+    do_not_cache: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the document will not be cached. This mean that you will be re-charged it you reprocess them as they will not be cached.",
+    )
+    fast_mode: Optional[bool] = Field(
+        default=False,
+        description="Note: Non compatible with gpt-4o. If set to true, the parser will use a faster mode to extract text from documents. This mode will skip OCR of images, and table/heading reconstruction.",
+    )
+    do_not_unroll_columns: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the parser will keep column in the text according to document layout. Reduce reconstruction accuracy, and LLM's/embedings performances in most case.",
+    )
+    page_separator: Optional[str] = Field(
+        default=None,
+        description="The page separator to use to split the text. Default is None, which means the parser will use the default separator '\\n---\\n'.",
+    )
     gpt4o_mode: bool = Field(
         default=False,
         description="Whether to use gpt-4o extract text from documents.",
