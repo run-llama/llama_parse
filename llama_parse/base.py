@@ -147,8 +147,13 @@ class LlamaParse(BasePydanticReader):
                         "parsing_instruction": self.parsing_instruction,
                         "invalidate_cache": self.invalidate_cache,
                         "skip_diagonal_text": self.skip_diagonal_text,
+                        "do_not_cache": self.do_not_cache,
+                        "fast_mode": self.fast_mode,
+                        "do_not_unroll_columns": self.do_not_unroll_columns,
+                        "page_separator": self.page_separator,
                         "gpt4o_mode": self.gpt4o_mode,
                         "gpt4o_api_key": self.gpt4o_api_key,
+                        
                     },
                 )
                 if not response.is_success:
