@@ -152,7 +152,7 @@ class LlamaParse(BasePydanticReader):
                         "do_not_unroll_columns": self.do_not_unroll_columns,
                         "page_separator": self.page_separator,
                         "gpt4o_mode": self.gpt4o_mode,
-                        "gpt4o_api_key": self.gpt4o_api_key, 
+                        "gpt4o_api_key": self.gpt4o_api_key,
                     },
                 )
                 if not response.is_success:
