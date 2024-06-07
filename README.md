@@ -6,7 +6,7 @@ LlamaParse directly integrates with [LlamaIndex](https://github.com/run-llama/ll
 
 Free plan is up to 1000 pages a day. Paid plan is free 7k pages per week + 0.3c per additional page.
 
-[See LlamaParse Documentation to get started!](https://docs.cloud.llamaindex.ai/llamaparse/getting_started)
+Read below for some quickstart information, or see the [full documentation](https://docs.cloud.llamaindex.ai/).
 
 ## Getting Started
 
@@ -88,6 +88,10 @@ Several end-to-end indexing examples can be found in the examples folder
 - [Getting Started](examples/demo_basic.ipynb)
 - [Advanced RAG Example](examples/demo_advanced.ipynb)
 - [Raw API Usage](examples/demo_api.ipynb)
+
+## Documentation
+
+[https://docs.cloud.llamaindex.ai/](https://docs.cloud.llamaindex.ai/)
 
 ## Terms of Service
 
