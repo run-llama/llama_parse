@@ -18,6 +18,22 @@ from llama_parse.utils import (
     Language,
     SUPPORTED_FILE_TYPES,
 )
+from copy import deepcopy
+
+
+def _get_sub_docs(docs: List[Document]) -> List[Document]:
+    """Split docs into pages, by separator."""
+    sub_docs = []
+    for doc in docs:
+        doc_chunks = doc.text.split("\n---\n")
+        for doc_chunk in doc_chunks:
+            sub_doc = Document(
+                text=doc_chunk,
+                metadata=deepcopy(doc.metadata),
+            )
+            sub_docs.append(sub_doc)
+
+    return sub_docs
 
 
 class LlamaParse(BasePydanticReader):
@@ -92,6 +108,10 @@ class LlamaParse(BasePydanticReader):
     ignore_errors: bool = Field(
         default=True,
         description="Whether or not to ignore and skip errors raised during parsing.",
+    )
+    split_by_page: bool = Field(
+        default=True,
+        description="Whether to split by page (NOTE: using a predefined separator `\n---\n`)",
     )
 
     @validator("api_key", pre=True, always=True)
@@ -222,12 +242,16 @@ class LlamaParse(BasePydanticReader):
                 job_id, self.result_type.value, verbose=verbose
             )
 
-            return [
+            docs = [
                 Document(
                     text=result[self.result_type.value],
                     metadata=extra_info or {},
                 )
             ]
+            if self.split_by_page:
+                return _get_sub_docs(docs)
+            else:
+                return docs
 
         except Exception as e:
             print(f"Error while parsing the file '{file_path}':", e)
