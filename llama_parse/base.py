@@ -95,7 +95,7 @@ class LlamaParse(BasePydanticReader):
     )
     split_by_page: bool = Field(
         default=True,
-        description="Whether to split by page (NOTE: using a predefined separator `\n---\n`)"
+        description="Whether to split by page (NOTE: using a predefined separator `\n---\n`)",
     )
 
     @validator("api_key", pre=True, always=True)
