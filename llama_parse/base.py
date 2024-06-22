@@ -110,7 +110,7 @@ class LlamaParse(BasePydanticReader):
         description="Whether or not to ignore and skip errors raised during parsing.",
     )
     split_by_page: bool = Field(
-        default=True,
+        default=False,
         description="Whether to split by page (NOTE: using a predefined separator `\n---\n`)",
     )
 
