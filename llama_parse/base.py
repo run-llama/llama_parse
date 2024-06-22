@@ -20,20 +20,7 @@ from llama_parse.utils import (
 )
 from copy import deepcopy
 
-
-def _get_sub_docs(docs: List[Document]) -> List[Document]:
-    """Split docs into pages, by separator."""
-    sub_docs = []
-    for doc in docs:
-        doc_chunks = doc.text.split("\n---\n")
-        for doc_chunk in doc_chunks:
-            sub_doc = Document(
-                text=doc_chunk,
-                metadata=deepcopy(doc.metadata),
-            )
-            sub_docs.append(sub_doc)
-
-    return sub_docs
+_DEFAULT_SEPARATOR = "\n---\n"
 
 
 class LlamaParse(BasePydanticReader):
@@ -119,7 +106,7 @@ class LlamaParse(BasePydanticReader):
     )
     split_by_page: bool = Field(
         default=True,
-        description="Whether to split by page (NOTE: using a predefined separator `\n---\n`)",
+        description="Whether to split by page using the page separator",
     )
 
     @validator("api_key", pre=True, always=True)
@@ -259,7 +246,7 @@ class LlamaParse(BasePydanticReader):
                 )
             ]
             if self.split_by_page:
-                return _get_sub_docs(docs)
+                return self._get_sub_docs(docs)
             else:
                 return docs
 
@@ -423,3 +410,18 @@ class LlamaParse(BasePydanticReader):
                 return []
             else:
                 raise e
+
+    def _get_sub_docs(self, docs: List[Document]) -> List[Document]:
+        """Split docs into pages, by separator."""
+        sub_docs = []
+        separator = self.page_separator or _DEFAULT_SEPARATOR
+        for doc in docs:
+            doc_chunks = doc.text.split(separator)
+            for doc_chunk in doc_chunks:
+                sub_doc = Document(
+                    text=doc_chunk,
+                    metadata=deepcopy(doc.metadata),
+                )
+                sub_docs.append(sub_doc)
+
+        return sub_docs
