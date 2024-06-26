@@ -5,7 +5,6 @@ from io import TextIOWrapper
 import httpx
 import mimetypes
 import time
-from enum import Enum
 from pathlib import Path, PurePath
 from typing import Any, Dict, List, Optional, Union
 
@@ -17,154 +16,29 @@ from llama_index.core.constants import DEFAULT_BASE_URL
 from llama_index.core.readers.base import BasePydanticReader
 from llama_index.core.readers.file.base import get_default_fs
 from llama_index.core.schema import Document
+from llama_parse.utils import (
+    nest_asyncio_err,
+    nest_asyncio_msg,
+    ResultType,
+    Language,
+    SUPPORTED_FILE_TYPES,
+)
+from copy import deepcopy
 
 
-nest_asyncio_err = "cannot be called from a running event loop"
-nest_asyncio_msg = "The event loop is already running. Add `import nest_asyncio; nest_asyncio.apply()` to your code to fix this issue."
+def _get_sub_docs(docs: List[Document]) -> List[Document]:
+    """Split docs into pages, by separator."""
+    sub_docs = []
+    for doc in docs:
+        doc_chunks = doc.text.split("\n---\n")
+        for doc_chunk in doc_chunks:
+            sub_doc = Document(
+                text=doc_chunk,
+                metadata=deepcopy(doc.metadata),
+            )
+            sub_docs.append(sub_doc)
 
-
-class ResultType(str, Enum):
-    """The result type for the parser."""
-
-    TXT = "text"
-    MD = "markdown"
-    JSON = "json"
-
-
-class Language(str, Enum):
-    BAZA = "abq"
-    ADYGHE = "ady"
-    AFRIKAANS = "af"
-    ANGIKA = "ang"
-    ARABIC = "ar"
-    ASSAMESE = "as"
-    AVAR = "ava"
-    AZERBAIJANI = "az"
-    BELARUSIAN = "be"
-    BULGARIAN = "bg"
-    BIHARI = "bh"
-    BHOJPURI = "bho"
-    BENGALI = "bn"
-    BOSNIAN = "bs"
-    SIMPLIFIED_CHINESE = "ch_sim"
-    TRADITIONAL_CHINESE = "ch_tra"
-    CHECHEN = "che"
-    CZECH = "cs"
-    WELSH = "cy"
-    DANISH = "da"
-    DARGWA = "dar"
-    GERMAN = "de"
-    ENGLISH = "en"
-    SPANISH = "es"
-    ESTONIAN = "et"
-    PERSIAN_FARSI = "fa"
-    FRENCH = "fr"
-    IRISH = "ga"
-    GOAN_KONKANI = "gom"
-    HINDI = "hi"
-    CROATIAN = "hr"
-    HUNGARIAN = "hu"
-    INDONESIAN = "id"
-    INGUSH = "inh"
-    ICELANDIC = "is"
-    ITALIAN = "it"
-    JAPANESE = "ja"
-    KABARDIAN = "kbd"
-    KANNADA = "kn"
-    KOREAN = "ko"
-    KURDISH = "ku"
-    LATIN = "la"
-    LAK = "lbe"
-    LEZGHIAN = "lez"
-    LITHUANIAN = "lt"
-    LATVIAN = "lv"
-    MAGAHI = "mah"
-    MAITHILI = "mai"
-    MAORI = "mi"
-    MONGOLIAN = "mn"
-    MARATHI = "mr"
-    MALAY = "ms"
-    MALTESE = "mt"
-    NEPALI = "ne"
-    NEWARI = "new"
-    DUTCH = "nl"
-    NORWEGIAN = "no"
-    OCCITAN = "oc"
-    PALI = "pi"
-    POLISH = "pl"
-    PORTUGUESE = "pt"
-    ROMANIAN = "ro"
-    RUSSIAN = "ru"
-    SERBIAN_CYRILLIC = "rs_cyrillic"
-    SERBIAN_LATIN = "rs_latin"
-    NAGPURI = "sck"
-    SLOVAK = "sk"
-    SLOVENIAN = "sl"
-    ALBANIAN = "sq"
-    SWEDISH = "sv"
-    SWAHILI = "sw"
-    TAMIL = "ta"
-    TABASSARAN = "tab"
-    TELUGU = "te"
-    THAI = "th"
-    TAJIK = "tjk"
-    TAGALOG = "tl"
-    TURKISH = "tr"
-    UYGHUR = "ug"
-    UKRAINIAN = "uk"
-    URDU = "ur"
-    UZBEK = "uz"
-    VIETNAMESE = "vi"
-
-
-SUPPORTED_FILE_TYPES = [
-    ".pdf",
-    # Microsoft word - all versions
-    ".doc",
-    ".docx",
-    ".docm",
-    ".dot",
-    ".dotx",
-    ".dotm",
-    # Rich text format
-    ".rtf",
-    # Microsoft Works
-    ".wps",
-    # Word Perfect
-    ".wpd",
-    # Open Office
-    ".sxw",
-    ".stw",
-    ".sxg",
-    # Apple
-    ".pages",
-    # Mac Write
-    ".mw",
-    ".mcw",
-    # Unified Office Format text
-    ".uot",
-    ".uof",
-    ".uos",
-    ".uop",
-    # Microsoft powerpoints
-    ".ppt",
-    ".pptx",
-    ".pot",
-    ".pptm",
-    ".potx",
-    ".potm",
-    # Apple keynote
-    ".key",
-    # Open Office Presentations
-    ".odp",
-    ".odg",
-    ".otp",
-    ".fopd",
-    ".sxi",
-    ".sti",
-    # ebook
-    ".epub",
-]
+    return sub_docs
 
 
 class LlamaParse(BasePydanticReader):
@@ -204,9 +78,53 @@ class LlamaParse(BasePydanticReader):
     parsing_instruction: Optional[str] = Field(
         default="", description="The parsing instruction for the parser."
     )
+    skip_diagonal_text: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the parser will ignore diagonal text (when the text rotation in degrees modulo 90 is not 0).",
+    )
+    invalidate_cache: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the cache will be ignored and the document re-processes. All document are kept in cache for 48hours after the job was completed to avoid processing the same document twice.",
+    )
+    do_not_cache: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the document will not be cached. This mean that you will be re-charged it you reprocess them as they will not be cached.",
+    )
+    fast_mode: Optional[bool] = Field(
+        default=False,
+        description="Note: Non compatible with gpt-4o. If set to true, the parser will use a faster mode to extract text from documents. This mode will skip OCR of images, and table/heading reconstruction.",
+    )
+    do_not_unroll_columns: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the parser will keep column in the text according to document layout. Reduce reconstruction accuracy, and LLM's/embedings performances in most case.",
+    )
+    page_separator: Optional[str] = Field(
+        default=None,
+        description="The page separator to use to split the text. Default is None, which means the parser will use the default separator '\\n---\\n'.",
+    )
+    gpt4o_mode: bool = Field(
+        default=False,
+        description="Whether to use gpt-4o extract text from documents.",
+    )
+    gpt4o_api_key: Optional[str] = Field(
+        default=None,
+        description="The API key for the GPT-4o API. Lowers the cost of parsing.",
+    )
+    bounding_box: Optional[str] = Field(
+        default=None,
+        description="The bounding box to use to extract text from documents describe as a string containing the bounding box margins",
+    )
+    target_pages: Optional[str] = Field(
+        default=None,
+        description="The target pages to extract text from documents. Describe as a comma separated list of page numbers. The first page of the document is page 0",
+    )
     ignore_errors: bool = Field(
         default=True,
         description="Whether or not to ignore and skip errors raised during parsing.",
+    )
+    split_by_page: bool = Field(
+        default=True,
+        description="Whether to split by page (NOTE: using a predefined separator `\n---\n`)",
     )
 
     @validator("api_key", pre=True, always=True)
@@ -266,6 +184,16 @@ class LlamaParse(BasePydanticReader):
                     data={
                         "language": self.language.value,
                         "parsing_instruction": self.parsing_instruction,
+                        "invalidate_cache": self.invalidate_cache,
+                        "skip_diagonal_text": self.skip_diagonal_text,
+                        "do_not_cache": self.do_not_cache,
+                        "fast_mode": self.fast_mode,
+                        "do_not_unroll_columns": self.do_not_unroll_columns,
+                        "page_separator": self.page_separator,
+                        "gpt4o_mode": self.gpt4o_mode,
+                        "gpt4o_api_key": self.gpt4o_api_key,
+                        "bounding_box": self.bounding_box,
+                        "target_pages": self.target_pages,
                     },
                 )
                 if not response.is_success:
@@ -339,12 +267,16 @@ class LlamaParse(BasePydanticReader):
                 job_id, self.result_type.value, verbose=verbose
             )
 
-            return [
+            docs = [
                 Document(
                     text=result[self.result_type.value],
                     metadata=extra_info or {},
                 )
             ]
+            if self.split_by_page:
+                return _get_sub_docs(docs)
+            else:
+                return docs
 
         except Exception as e:
             print(f"Error while parsing the file '{file_path}':", e)
@@ -475,6 +407,11 @@ class LlamaParse(BasePydanticReader):
     ) -> List[Dict[str, Any]]:
         """Download images from the parsed result."""
         headers = {"Authorization": f"Bearer {self.api_key}"}
+
+        # make the download path
+        if not os.path.exists(download_path):
+            os.makedirs(download_path)
+
         try:
             images = []
             for result in json_result:
@@ -484,9 +421,17 @@ class LlamaParse(BasePydanticReader):
                         print(f"> Image for page {page['page']}: {page['images']}")
                     for image in page["images"]:
                         image_name = image["name"]
+
+                        # get the full path
                         image_path = os.path.join(
                             download_path, f"{job_id}-{image_name}"
                         )
+
+                        # get a valid image path
+                        if not image_path.endswith(".png"):
+                            if not image_path.endswith(".jpg"):
+                                image_path += ".png"
+
                         image["path"] = image_path
                         image["job_id"] = job_id
                         image["original_pdf_path"] = result["file_path"]
