@@ -105,6 +105,14 @@ class LlamaParse(BasePydanticReader):
         default=None,
         description="The API key for the GPT-4o API. Lowers the cost of parsing.",
     )
+    bounding_box: Optional[str] = Field(
+        default=None,
+        description="The bounding box to use to extract text from documents describe as a string containing the bounding box margins",
+    )
+    target_pages: Optional[str] = Field(
+        default=None,
+        description="The target pages to extract text from documents. Describe as a comma separated list of page numbers. The first page of the document is page 0",
+    )
     ignore_errors: bool = Field(
         default=True,
         description="Whether or not to ignore and skip errors raised during parsing.",
@@ -173,6 +181,8 @@ class LlamaParse(BasePydanticReader):
                         "page_separator": self.page_separator,
                         "gpt4o_mode": self.gpt4o_mode,
                         "gpt4o_api_key": self.gpt4o_api_key,
+                        "bounding_box": self.bounding_box,
+                        "target_pages": self.target_pages,
                     },
                 )
                 if not response.is_success:
