@@ -1,15 +1,20 @@
 import os
 import asyncio
+from io import TextIOWrapper
+
 import httpx
 import mimetypes
 import time
-from pathlib import Path
-from typing import List, Optional, Union
+from pathlib import Path, PurePath
+from typing import Any, Dict, List, Optional, Union
 
+from fsspec import AbstractFileSystem
+from fsspec.spec import AbstractBufferedFile
 from llama_index.core.async_utils import run_jobs
 from llama_index.core.bridge.pydantic import Field, validator
 from llama_index.core.constants import DEFAULT_BASE_URL
 from llama_index.core.readers.base import BasePydanticReader
+from llama_index.core.readers.file.base import get_default_fs
 from llama_index.core.schema import Document
 from llama_parse.utils import (
     nest_asyncio_err,
@@ -143,10 +148,15 @@ class LlamaParse(BasePydanticReader):
 
     # upload a document and get back a job_id
     async def _create_job(
-        self, file_path: str, extra_info: Optional[dict] = None
+        self,
+        file_path: Union[str, PurePath],
+        extra_info: Optional[Dict[str, Any]] = None,
+        fs: Optional[AbstractFileSystem] = None,
     ) -> str:
-        file_path = str(file_path)
-        file_ext = os.path.splitext(file_path)[1]
+        str_file_path = file_path
+        if isinstance(file_path, PurePath):
+            str_file_path = file_path.name
+        file_ext = os.path.splitext(str_file_path)[1]
         if file_ext not in SUPPORTED_FILE_TYPES:
             raise Exception(
                 f"Currently, only the following file types are supported: {SUPPORTED_FILE_TYPES}\n"
@@ -154,14 +164,15 @@ class LlamaParse(BasePydanticReader):
             )
 
         extra_info = extra_info or {}
-        extra_info["file_path"] = file_path
+        extra_info["file_path"] = str_file_path
 
         headers = {"Authorization": f"Bearer {self.api_key}"}
 
         # load data, set the mime type
-        with open(file_path, "rb") as f:
-            mime_type = mimetypes.guess_type(file_path)[0]
-            files = {"file": (f.name, f, mime_type)}
+        fs = fs or get_default_fs()
+        with fs.open(file_path, "rb") as f:
+            mime_type = mimetypes.guess_type(str_file_path)[0]
+            files = {"file": (self.__get_filename(f), f, mime_type)}
 
             # send the request, start job
             url = f"{self.base_url}/api/parsing/upload"
@@ -192,9 +203,15 @@ class LlamaParse(BasePydanticReader):
         job_id = response.json()["id"]
         return job_id
 
+    @staticmethod
+    def __get_filename(f: Union[TextIOWrapper, AbstractBufferedFile]) -> str:
+        if isinstance(f, TextIOWrapper):
+            return f.name
+        return f.full_name
+
     async def _get_job_result(
         self, job_id: str, result_type: str, verbose: bool = False
-    ) -> dict:
+    ) -> Dict[str, Any]:
         result_url = f"{self.base_url}/api/parsing/job/{job_id}/result/{result_type}"
         status_url = f"{self.base_url}/api/parsing/job/{job_id}"
         headers = {"Authorization": f"Bearer {self.api_key}"}
@@ -233,18 +250,16 @@ class LlamaParse(BasePydanticReader):
 
                     await asyncio.sleep(self.check_interval)
 
-                    continue
-                else:
-                    raise Exception(
-                        f"Failed to parse the file: {job_id}, status: {status}"
-                    )
-
     async def _aload_data(
-        self, file_path: str, extra_info: Optional[dict] = None, verbose: bool = False
+        self,
+        file_path: Union[str, PurePath],
+        extra_info: Optional[Dict[str, Any]] = None,
+        fs: Optional[AbstractFileSystem] = None,
+        verbose: bool = False,
     ) -> List[Document]:
         """Load data from the input path."""
         try:
-            job_id = await self._create_job(file_path, extra_info=extra_info)
+            job_id = await self._create_job(file_path, extra_info=extra_info, fs=fs)
             if verbose:
                 print("Started parsing the file under job_id %s" % job_id)
 
@@ -271,18 +286,22 @@ class LlamaParse(BasePydanticReader):
                 raise e
 
     async def aload_data(
-        self, file_path: Union[List[str], str], extra_info: Optional[dict] = None
+        self,
+        file_path: Union[List[str], str, PurePath, List[PurePath]],
+        extra_info: Optional[Dict[str, Any]] = None,
+        fs: Optional[AbstractFileSystem] = None,
     ) -> List[Document]:
         """Load data from the input path."""
-        if isinstance(file_path, (str, Path)):
+        if isinstance(file_path, (str, PurePath)):
             return await self._aload_data(
-                file_path, extra_info=extra_info, verbose=self.verbose
+                file_path, extra_info=extra_info, fs=fs, verbose=self.verbose
             )
         elif isinstance(file_path, list):
             jobs = [
                 self._aload_data(
                     f,
                     extra_info=extra_info,
+                    fs=fs,
                     verbose=self.verbose and not self.show_progress,
                 )
                 for f in file_path
@@ -308,11 +327,14 @@ class LlamaParse(BasePydanticReader):
             )
 
     def load_data(
-        self, file_path: Union[List[str], str], extra_info: Optional[dict] = None
+        self,
+        file_path: Union[List[str], str, PurePath, List[PurePath]],
+        extra_info: Optional[Dict[str, Any]] = None,
+        fs: Optional[AbstractFileSystem] = None,
     ) -> List[Document]:
         """Load data from the input path."""
         try:
-            return asyncio.run(self.aload_data(file_path, extra_info))
+            return asyncio.run(self.aload_data(file_path, extra_info, fs=fs))
         except RuntimeError as e:
             if nest_asyncio_err in str(e):
                 raise RuntimeError(nest_asyncio_msg)
@@ -380,7 +402,9 @@ class LlamaParse(BasePydanticReader):
             else:
                 raise e
 
-    def get_images(self, json_result: List[dict], download_path: str) -> List[dict]:
+    def get_images(
+        self, json_result: List[Dict[str, Any]], download_path: str
+    ) -> List[Dict[str, Any]]:
         """Download images from the parsed result."""
         headers = {"Authorization": f"Bearer {self.api_key}"}
 

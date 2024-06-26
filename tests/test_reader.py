@@ -1,5 +1,7 @@
 import os
 import pytest
+from fsspec.implementations.local import LocalFileSystem
+
 from llama_parse import LlamaParse
 
 
@@ -31,6 +33,20 @@ def test_simple_page_markdown() -> None:
     result = parser.load_data(filepath)
     assert len(result) == 1
     assert len(result[0].text) > 0
+
+
+@pytest.mark.skipif(
+    os.environ.get("LLAMA_CLOUD_API_KEY", "") == "",
+    reason="LLAMA_CLOUD_API_KEY not set",
+)
+def test_simple_page_with_custom_fs() -> None:
+    parser = LlamaParse(result_type="markdown")
+    fs = LocalFileSystem()
+    filepath = os.path.join(
+        os.path.dirname(__file__), "test_files/attention_is_all_you_need.pdf"
+    )
+    result = parser.load_data(filepath, fs=fs)
+    assert len(result) == 1
 
 
 @pytest.mark.skipif(
