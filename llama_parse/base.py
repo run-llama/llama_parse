@@ -5,6 +5,7 @@ import mimetypes
 import time
 from pathlib import Path
 from typing import List, Optional, Union
+from io import BufferedIOBase
 
 from llama_index.core.async_utils import run_jobs
 from llama_index.core.bridge.pydantic import Field, validator
@@ -19,6 +20,10 @@ from llama_parse.utils import (
     SUPPORTED_FILE_TYPES,
 )
 from copy import deepcopy
+
+# can put in a path to the file or the file bytes itself
+# if passing as bytes or a buffer, must provide the file_name in extra_info
+FileInput = Union[str, bytes, BufferedIOBase]
 
 
 def _get_sub_docs(docs: List[Document]) -> List[Document]:
@@ -142,29 +147,32 @@ class LlamaParse(BasePydanticReader):
         return url or v or DEFAULT_BASE_URL
 
     # upload a document and get back a job_id
-    async def _create_job(
-        self, file_path: str, extra_info: Optional[dict] = None
-    ) -> str:
-        file_path = str(file_path)
-        file_ext = os.path.splitext(file_path)[1]
-        if file_ext not in SUPPORTED_FILE_TYPES:
-            raise Exception(
-                f"Currently, only the following file types are supported: {SUPPORTED_FILE_TYPES}\n"
-                f"Current file type: {file_ext}"
-            )
-
-        extra_info = extra_info or {}
-        extra_info["file_path"] = file_path
-
+    async def _create_job(self, file_input: FileInput, extra_info: Optional[dict] = None) -> str:
         headers = {"Authorization": f"Bearer {self.api_key}"}
+        url = f"{self.base_url}/api/parsing/upload"
+        files = None
+        file_handle = None
 
-        # load data, set the mime type
-        with open(file_path, "rb") as f:
+        if isinstance(file_input, (bytes, BufferedIOBase)):
+            if not extra_info or "file_name" not in extra_info:
+                raise ValueError("file_name must be provided in extra_info when passing bytes")
+            file_name = extra_info["file_name"]
+            mime_type = mimetypes.guess_type(file_name)[0]
+            files = {"file": (file_name, file_input, mime_type)}
+        elif isinstance(file_input, str):
+            file_path = str(file_input)
+            file_ext = os.path.splitext(file_path)[1]
+            if file_ext not in SUPPORTED_FILE_TYPES:
+                raise Exception(f"Currently, only the following file types are supported: {SUPPORTED_FILE_TYPES}\n"
+                                f"Current file type: {file_ext}")
             mime_type = mimetypes.guess_type(file_path)[0]
-            files = {"file": (f.name, f, mime_type)}
+            # Open the file here for the duration of the async context
+            file_handle = open(file_path, 'rb')
+            files = {"file": (os.path.basename(file_path), file_handle, mime_type)}
+        else:
+            raise ValueError("file_input must be either a file path string, file bytes, or buffer object")
 
-            # send the request, start job
-            url = f"{self.base_url}/api/parsing/upload"
+        try:
             async with httpx.AsyncClient(timeout=self.max_timeout) as client:
                 response = await client.post(
                     url,
@@ -187,10 +195,11 @@ class LlamaParse(BasePydanticReader):
                 )
                 if not response.is_success:
                     raise Exception(f"Failed to parse the file: {response.text}")
-
-        # check the status of the job, return when done
-        job_id = response.json()["id"]
-        return job_id
+                job_id = response.json()["id"]
+                return job_id
+        finally:
+            if file_handle is not None:
+                file_handle.close()
 
     async def _get_job_result(
         self, job_id: str, result_type: str, verbose: bool = False
@@ -240,7 +249,7 @@ class LlamaParse(BasePydanticReader):
                     )
 
     async def _aload_data(
-        self, file_path: str, extra_info: Optional[dict] = None, verbose: bool = False
+        self, file_path: FileInput, extra_info: Optional[dict] = None, verbose: bool = False
     ) -> List[Document]:
         """Load data from the input path."""
         try:
@@ -271,10 +280,10 @@ class LlamaParse(BasePydanticReader):
                 raise e
 
     async def aload_data(
-        self, file_path: Union[List[str], str], extra_info: Optional[dict] = None
+        self, file_path: Union[List[FileInput], FileInput], extra_info: Optional[dict] = None
     ) -> List[Document]:
         """Load data from the input path."""
-        if isinstance(file_path, (str, Path)):
+        if isinstance(file_path, (str, Path, bytes, BufferedIOBase)):
             return await self._aload_data(
                 file_path, extra_info=extra_info, verbose=self.verbose
             )
@@ -308,7 +317,7 @@ class LlamaParse(BasePydanticReader):
             )
 
     def load_data(
-        self, file_path: Union[List[str], str], extra_info: Optional[dict] = None
+        self, file_path: Union[List[FileInput], FileInput], extra_info: Optional[dict] = None
     ) -> List[Document]:
         """Load data from the input path."""
         try:
@@ -320,7 +329,7 @@ class LlamaParse(BasePydanticReader):
                 raise e
 
     async def _aget_json(
-        self, file_path: str, extra_info: Optional[dict] = None
+        self, file_path: FileInput, extra_info: Optional[dict] = None
     ) -> List[dict]:
         """Load data from the input path."""
         try:
@@ -341,7 +350,7 @@ class LlamaParse(BasePydanticReader):
                 raise e
 
     async def aget_json(
-        self, file_path: Union[List[str], str], extra_info: Optional[dict] = None
+        self, file_path: Union[List[FileInput], FileInput], extra_info: Optional[dict] = None
     ) -> List[dict]:
         """Load data from the input path."""
         if isinstance(file_path, (str, Path)):
@@ -369,7 +378,7 @@ class LlamaParse(BasePydanticReader):
             )
 
     def get_json_result(
-        self, file_path: Union[List[str], str], extra_info: Optional[dict] = None
+        self, file_path: Union[List[FileInput], FileInput], extra_info: Optional[dict] = None
     ) -> List[dict]:
         """Parse the input path."""
         try:
