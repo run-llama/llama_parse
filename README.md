@@ -55,6 +55,34 @@ documents = await parser.aload_data("./my_file.pdf")
 documents = await parser.aload_data(["./my_file1.pdf", "./my_file2.pdf"])
 ```
 
+## Using with file object
+
+You can parse a file object directly:
+
+```python
+import nest_asyncio
+
+nest_asyncio.apply()
+
+from llama_parse import LlamaParse
+
+parser = LlamaParse(
+    api_key="llx-...",  # can also be set in your env as LLAMA_CLOUD_API_KEY
+    result_type="markdown",  # "markdown" and "text" are available
+    num_workers=4,  # if multiple files passed, split in `num_workers` API calls
+    verbose=True,
+    language="en",  # Optionally you can define a language, default=en
+)
+
+with open("./my_file1.pdf", "rb") as f:
+    documents = parser.load_data(f)
+
+# you can also pass file bytes directly
+with open("./my_file1.pdf", "rb") as f:
+    file_bytes = f.read()
+    documents = parser.load_data(file_bytes)
+```
+
 ## Using with `SimpleDirectoryReader`
 
 You can also integrate the parser as the default PDF loader in `SimpleDirectoryReader`:
