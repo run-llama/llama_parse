@@ -17,6 +17,7 @@ def test_simple_page_text() -> None:
     assert len(result) == 1
     assert len(result[0].text) > 0
 
+
 @pytest.fixture
 def markdown_parser() -> LlamaParse:
     if os.environ.get("LLAMA_CLOUD_API_KEY", "") == "":
@@ -32,6 +33,7 @@ def test_simple_page_markdown(markdown_parser: LlamaParse) -> None:
     assert len(result) == 1
     assert len(result[0].text) > 0
 
+
 def test_simple_page_markdown_bytes(markdown_parser: LlamaParse) -> None:
     markdown_parser = LlamaParse(result_type="markdown", ignore_errors=False)
 
@@ -43,9 +45,12 @@ def test_simple_page_markdown_bytes(markdown_parser: LlamaParse) -> None:
     # client must provide extra_info with file_name
     with pytest.raises(ValueError):
         result = markdown_parser.load_data(file_bytes)
-    result = markdown_parser.load_data(file_bytes, extra_info={"file_name": "attention_is_all_you_need.pdf"})
+    result = markdown_parser.load_data(
+        file_bytes, extra_info={"file_name": "attention_is_all_you_need.pdf"}
+    )
     assert len(result) == 1
     assert len(result[0].text) > 0
+
 
 def test_simple_page_markdown_buffer(markdown_parser: LlamaParse) -> None:
     markdown_parser = LlamaParse(result_type="markdown", ignore_errors=False)
@@ -57,7 +62,9 @@ def test_simple_page_markdown_buffer(markdown_parser: LlamaParse) -> None:
         # client must provide extra_info with file_name
         with pytest.raises(ValueError):
             result = markdown_parser.load_data(f)
-        result = markdown_parser.load_data(f, extra_info={"file_name": "attention_is_all_you_need.pdf"})
+        result = markdown_parser.load_data(
+            f, extra_info={"file_name": "attention_is_all_you_need.pdf"}
+        )
         assert len(result) == 1
         assert len(result[0].text) > 0
 
