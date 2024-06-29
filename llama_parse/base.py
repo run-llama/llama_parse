@@ -284,7 +284,8 @@ class LlamaParse(BasePydanticReader):
                 return docs
 
         except Exception as e:
-            print(f"Error while parsing the file {file_path}:", e)
+            file_repr = file_path if isinstance(file_path, str) else "<bytes/buffer>"
+            print(f"Error while parsing the file '{file_repr}':", e)
             if self.ignore_errors:
                 return []
             else:
@@ -358,7 +359,8 @@ class LlamaParse(BasePydanticReader):
             return [result]
 
         except Exception as e:
-            print(f"Error while parsing the file {file_path}:", e)
+            file_repr = file_path if isinstance(file_path, str) else "<bytes/buffer>"
+            print(f"Error while parsing the file '{file_repr}':", e)
             if self.ignore_errors:
                 return []
             else:
