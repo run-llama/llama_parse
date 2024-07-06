@@ -3,7 +3,7 @@ import asyncio
 import httpx
 import mimetypes
 import time
-from pathlib import Path
+from pathlib import Path, PosixPath
 from typing import List, Optional, Union
 from io import BufferedIOBase
 
@@ -163,7 +163,7 @@ class LlamaParse(BasePydanticReader):
             file_name = extra_info["file_name"]
             mime_type = mimetypes.guess_type(file_name)[0]
             files = {"file": (file_name, file_input, mime_type)}
-        elif isinstance(file_input, str):
+        elif isinstance(file_input, (str, PosixPath)) :
             file_path = str(file_input)
             file_ext = os.path.splitext(file_path)[1]
             if file_ext not in SUPPORTED_FILE_TYPES:
