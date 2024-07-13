@@ -177,7 +177,7 @@ class LlamaParse(BasePydanticReader):
             files = {"file": (file_name, file_input, mime_type)}
         elif isinstance(file_input, (str, Path)):
             file_path = str(file_input)
-            file_ext = os.path.splitext(file_path)[1]
+            file_ext = os.path.splitext(file_path)[1].lower()
             if file_ext not in SUPPORTED_FILE_TYPES:
                 raise Exception(
                     f"Currently, only the following file types are supported: {SUPPORTED_FILE_TYPES}\n"
