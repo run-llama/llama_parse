@@ -5,6 +5,7 @@ import mimetypes
 import time
 from pathlib import Path
 from typing import List, Optional, Union
+from io import BufferedIOBase
 
 from llama_index.core.async_utils import run_jobs
 from llama_index.core.bridge.pydantic import Field, validator
@@ -19,6 +20,10 @@ from llama_parse.utils import (
     SUPPORTED_FILE_TYPES,
 )
 from copy import deepcopy
+
+# can put in a path to the file or the file bytes itself
+# if passing as bytes or a buffer, must provide the file_name in extra_info
+FileInput = Union[str, bytes, BufferedIOBase]
 
 _DEFAULT_SEPARATOR = "\n---\n"
 
@@ -108,6 +113,18 @@ class LlamaParse(BasePydanticReader):
         default=True,
         description="Whether to split by page using the page separator",
     )
+    vendor_multimodal_api_key: Optional[str] = Field(
+        default=None,
+        description="The API key for the multimodal API.",
+    )
+    use_vendor_multimodal_model: bool = Field(
+        default=False,
+        description="Whether to use the vendor multimodal API.",
+    )
+    vendor_multimodal_model_name: Optional[str] = Field(
+        default=None,
+        description="The model name for the vendor multimodal API.",
+    )
 
     @validator("api_key", pre=True, always=True)
     def validate_api_key(cls, v: str) -> str:
@@ -130,28 +147,39 @@ class LlamaParse(BasePydanticReader):
 
     # upload a document and get back a job_id
     async def _create_job(
-        self, file_path: str, extra_info: Optional[dict] = None
+        self, file_input: FileInput, extra_info: Optional[dict] = None
     ) -> str:
-        file_path = str(file_path)
-        file_ext = os.path.splitext(file_path)[1]
-        if file_ext not in SUPPORTED_FILE_TYPES:
-            raise Exception(
-                f"Currently, only the following file types are supported: {SUPPORTED_FILE_TYPES}\n"
-                f"Current file type: {file_ext}"
+        headers = {"Authorization": f"Bearer {self.api_key}"}
+        url = f"{self.base_url}/api/parsing/upload"
+        files = None
+        file_handle = None
+
+        if isinstance(file_input, (bytes, BufferedIOBase)):
+            if not extra_info or "file_name" not in extra_info:
+                raise ValueError(
+                    "file_name must be provided in extra_info when passing bytes"
+                )
+            file_name = extra_info["file_name"]
+            mime_type = mimetypes.guess_type(file_name)[0]
+            files = {"file": (file_name, file_input, mime_type)}
+        elif isinstance(file_input, (str, Path)):
+            file_path = str(file_input)
+            file_ext = os.path.splitext(file_path)[1].lower()
+            if file_ext not in SUPPORTED_FILE_TYPES:
+                raise Exception(
+                    f"Currently, only the following file types are supported: {SUPPORTED_FILE_TYPES}\n"
+                    f"Current file type: {file_ext}"
+                )
+            mime_type = mimetypes.guess_type(file_path)[0]
+            # Open the file here for the duration of the async context
+            file_handle = open(file_path, "rb")
+            files = {"file": (os.path.basename(file_path), file_handle, mime_type)}
+        else:
+            raise ValueError(
+                "file_input must be either a file path string, file bytes, or buffer object"
             )
 
-        extra_info = extra_info or {}
-        extra_info["file_path"] = file_path
-
-        headers = {"Authorization": f"Bearer {self.api_key}"}
-
-        # load data, set the mime type
-        with open(file_path, "rb") as f:
-            mime_type = mimetypes.guess_type(file_path)[0]
-            files = {"file": (f.name, f, mime_type)}
-
-            # send the request, start job
-            url = f"{self.base_url}/api/parsing/upload"
+        try:
             async with httpx.AsyncClient(timeout=self.max_timeout) as client:
                 response = await client.post(
                     url,
@@ -170,14 +198,18 @@ class LlamaParse(BasePydanticReader):
                         "gpt4o_api_key": self.gpt4o_api_key,
                         "bounding_box": self.bounding_box,
                         "target_pages": self.target_pages,
+                        "vendor_multimodal_api_key": self.vendor_multimodal_api_key,
+                        "use_vendor_multimodal_model": self.use_vendor_multimodal_model,
+                        "vendor_multimodal_model_name": self.vendor_multimodal_model_name,
                     },
                 )
                 if not response.is_success:
                     raise Exception(f"Failed to parse the file: {response.text}")
-
-        # check the status of the job, return when done
-        job_id = response.json()["id"]
-        return job_id
+                job_id = response.json()["id"]
+                return job_id
+        finally:
+            if file_handle is not None:
+                file_handle.close()
 
     async def _get_job_result(
         self, job_id: str, result_type: str, verbose: bool = False
@@ -227,7 +259,10 @@ class LlamaParse(BasePydanticReader):
                     )
 
     async def _aload_data(
-        self, file_path: str, extra_info: Optional[dict] = None, verbose: bool = False
+        self,
+        file_path: FileInput,
+        extra_info: Optional[dict] = None,
+        verbose: bool = False,
     ) -> List[Document]:
         """Load data from the input path."""
         try:
@@ -251,17 +286,20 @@ class LlamaParse(BasePydanticReader):
                 return docs
 
         except Exception as e:
-            print(f"Error while parsing the file '{file_path}':", e)
+            file_repr = file_path if isinstance(file_path, str) else "<bytes/buffer>"
+            print(f"Error while parsing the file '{file_repr}':", e)
             if self.ignore_errors:
                 return []
             else:
                 raise e
 
     async def aload_data(
-        self, file_path: Union[List[str], str], extra_info: Optional[dict] = None
+        self,
+        file_path: Union[List[FileInput], FileInput],
+        extra_info: Optional[dict] = None,
     ) -> List[Document]:
         """Load data from the input path."""
-        if isinstance(file_path, (str, Path)):
+        if isinstance(file_path, (str, Path, bytes, BufferedIOBase)):
             return await self._aload_data(
                 file_path, extra_info=extra_info, verbose=self.verbose
             )
@@ -295,7 +333,9 @@ class LlamaParse(BasePydanticReader):
             )
 
     def load_data(
-        self, file_path: Union[List[str], str], extra_info: Optional[dict] = None
+        self,
+        file_path: Union[List[FileInput], FileInput],
+        extra_info: Optional[dict] = None,
     ) -> List[Document]:
         """Load data from the input path."""
         try:
@@ -307,7 +347,7 @@ class LlamaParse(BasePydanticReader):
                 raise e
 
     async def _aget_json(
-        self, file_path: str, extra_info: Optional[dict] = None
+        self, file_path: FileInput, extra_info: Optional[dict] = None
     ) -> List[dict]:
         """Load data from the input path."""
         try:
@@ -321,14 +361,17 @@ class LlamaParse(BasePydanticReader):
             return [result]
 
         except Exception as e:
-            print(f"Error while parsing the file '{file_path}':", e)
+            file_repr = file_path if isinstance(file_path, str) else "<bytes/buffer>"
+            print(f"Error while parsing the file '{file_repr}':", e)
             if self.ignore_errors:
                 return []
             else:
                 raise e
 
     async def aget_json(
-        self, file_path: Union[List[str], str], extra_info: Optional[dict] = None
+        self,
+        file_path: Union[List[FileInput], FileInput],
+        extra_info: Optional[dict] = None,
     ) -> List[dict]:
         """Load data from the input path."""
         if isinstance(file_path, (str, Path)):
@@ -356,7 +399,9 @@ class LlamaParse(BasePydanticReader):
             )
 
     def get_json_result(
-        self, file_path: Union[List[str], str], extra_info: Optional[dict] = None
+        self,
+        file_path: Union[List[FileInput], FileInput],
+        extra_info: Optional[dict] = None,
     ) -> List[dict]:
         """Parse the input path."""
         try:
