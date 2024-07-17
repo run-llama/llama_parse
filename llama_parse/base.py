@@ -100,7 +100,15 @@ class LlamaParse(BasePydanticReader):
     )
     page_separator: Optional[str] = Field(
         default=None,
-        description="The page separator to use to split the text. Default is None, which means the parser will use the default separator '\\n---\\n'.",
+        description="A templated  page separator to use to split the text.  If it contain `{page_number}`,it will be replaced by the next page number. If not set will the default separator '\\n---\\n' will be used.",
+    )
+    page_prefix: Optional[str] = Field(
+        default=None,
+        description="A templated prefix to add to the beginning of each page. If it contain `{page_number}`, it will be replaced by the page number.",
+    )
+    page_suffix: Optional[str] = Field(
+        default=None,
+        description="A templated suffix to add to the beginning of each page. If it contain `{page_number}`, it will be replaced by the page number.",
     )
     gpt4o_mode: bool = Field(
         default=False,
@@ -192,29 +200,42 @@ class LlamaParse(BasePydanticReader):
                 "file_input must be either a file path string, file bytes, or buffer object"
             )
 
+        data = {
+            "language": self.language.value,
+            "parsing_instruction": self.parsing_instruction,
+            "invalidate_cache": self.invalidate_cache,
+            "skip_diagonal_text": self.skip_diagonal_text,
+            "do_not_cache": self.do_not_cache,
+            "fast_mode": self.fast_mode,
+            "do_not_unroll_columns": self.do_not_unroll_columns,
+            "gpt4o_mode": self.gpt4o_mode,
+            "gpt4o_api_key": self.gpt4o_api_key,
+            "bounding_box": self.bounding_box,
+            "target_pages": self.target_pages,
+            "vendor_multimodal_api_key": self.vendor_multimodal_api_key,
+            "use_vendor_multimodal_model": self.use_vendor_multimodal_model,
+            "vendor_multimodal_model_name": self.vendor_multimodal_model_name,
+        }
+
+
+        # only send page separator to server if it is not None
+        # as if a null, "" string is sent the server will then ignore the page separator instead of using the default
+        if self.page_separator is not None:
+            data["page_separator"] = self.page_separator
+
+        if self.page_prefix is not None:
+            data["page_prefix"] = self.page_prefix
+
+        if self.page_suffix is not None:
+            data["page_suffix"] = self.page_suffix
+
         try:
             async with httpx.AsyncClient(timeout=self.max_timeout) as client:
                 response = await client.post(
                     url,
                     files=files,
                     headers=headers,
-                    data={
-                        "language": self.language.value,
-                        "parsing_instruction": self.parsing_instruction,
-                        "invalidate_cache": self.invalidate_cache,
-                        "skip_diagonal_text": self.skip_diagonal_text,
-                        "do_not_cache": self.do_not_cache,
-                        "fast_mode": self.fast_mode,
-                        "do_not_unroll_columns": self.do_not_unroll_columns,
-                        "page_separator": self.page_separator,
-                        "gpt4o_mode": self.gpt4o_mode,
-                        "gpt4o_api_key": self.gpt4o_api_key,
-                        "bounding_box": self.bounding_box,
-                        "target_pages": self.target_pages,
-                        "vendor_multimodal_api_key": self.vendor_multimodal_api_key,
-                        "use_vendor_multimodal_model": self.use_vendor_multimodal_model,
-                        "vendor_multimodal_model_name": self.vendor_multimodal_model_name,
-                    },
+                    data=data,
                 )
                 if not response.is_success:
                     raise Exception(f"Failed to parse the file: {response.text}")
