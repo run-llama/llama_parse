@@ -210,8 +210,6 @@ class LlamaParse(BasePydanticReader):
             "do_not_unroll_columns": self.do_not_unroll_columns,
             "gpt4o_mode": self.gpt4o_mode,
             "gpt4o_api_key": self.gpt4o_api_key,
-            "bounding_box": self.bounding_box,
-            "target_pages": self.target_pages,
             "vendor_multimodal_api_key": self.vendor_multimodal_api_key,
             "use_vendor_multimodal_model": self.use_vendor_multimodal_model,
             "vendor_multimodal_model_name": self.vendor_multimodal_model_name,
@@ -228,6 +226,12 @@ class LlamaParse(BasePydanticReader):
 
         if self.page_suffix is not None:
             data["page_suffix"] = self.page_suffix
+
+        if self.bounding_box is not None:
+            data["bounding_box"] = self.bounding_box
+
+        if self.target_pages is not None:
+            data["target_pages"] = self.target_pages
 
         try:
             async with httpx.AsyncClient(timeout=self.max_timeout) as client:
