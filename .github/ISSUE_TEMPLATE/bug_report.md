@@ -17,6 +17,7 @@ If possible, please provide the PDF file causing the issue.
 
 **Job ID**
 If you have it, please provide the ID of the job you ran.
+You can find it here: https://cloud.llamaindex.ai/parse in the "History" tab.
 
 **Screenshots**
 Feel free to also provide screenshots if relevant.
