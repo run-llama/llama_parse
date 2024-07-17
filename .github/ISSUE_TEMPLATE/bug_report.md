@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-Note: we're aware of some missing content in the output and layout issues on tables. Please refrain from opening new issues on this topic except if you think it's different from what has already been reported.
+_Note: we're aware of some missing content in the output and layout issues on tables. Please refrain from opening new issues on this topic except if you think it's different from what has already been reported._
 
 **Describe the bug**
 Write a concise description of what the bug is.
