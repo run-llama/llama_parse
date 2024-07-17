@@ -84,3 +84,5 @@ repos:
     hooks:
       - id: toml-sort-fix
         exclude: ".*poetry.lock"
+
+exclude: .github/ISSUE_TEMPLATE
