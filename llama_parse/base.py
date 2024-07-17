@@ -215,7 +215,6 @@ class LlamaParse(BasePydanticReader):
             "vendor_multimodal_model_name": self.vendor_multimodal_model_name,
         }
 
-
         # only send page separator to server if it is not None
         # as if a null, "" string is sent the server will then ignore the page separator instead of using the default
         if self.page_separator is not None:
