@@ -23,11 +23,12 @@ You can find it here: https://cloud.llamaindex.ai/parse in the "History" tab.
 Feel free to also provide screenshots if relevant.
 
 **Client:**
- - [ ] Frontend (cloud.llamaindex.ai)
- - [ ] Python Library
- - [ ] Typescript Library
- - [ ] Notebook
- - [ ] API
+Please remove untested options:
+ - Frontend (cloud.llamaindex.ai)
+ - Python Library
+ - Typescript Library
+ - Notebook
+ - API
 
 **Options**
 What options did you use? Multimodal, fast mode, parsing instructions, etc.
