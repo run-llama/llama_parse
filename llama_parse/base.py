@@ -415,7 +415,7 @@ class LlamaParse(BasePydanticReader):
         extra_info: Optional[dict] = None,
     ) -> List[dict]:
         """Load data from the input path."""
-        if isinstance(file_path, (str, Path)):
+        if isinstance(file_path, (str, Path, bytes, BufferedIOBase)):
             return await self._aget_json(file_path, extra_info=extra_info)
         elif isinstance(file_path, list):
             jobs = [self._aget_json(f, extra_info=extra_info) for f in file_path]
