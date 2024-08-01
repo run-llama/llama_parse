@@ -1,4 +1,5 @@
 import os
+import aiofiles
 import asyncio
 import httpx
 import mimetypes
@@ -134,6 +135,25 @@ class LlamaParse(BasePydanticReader):
         description="The model name for the vendor multimodal API.",
     )
 
+    client: Optional[httpx.AsyncClient] = None
+
+    def model_post_init(self):
+        if self.client is None:
+            self.client = httpx.AsyncClient(
+                timeout=self.max_timeout,
+                base_url=self.base_url,
+                headers={"Authorization": f"Bearer {self.api_key}"},
+            )
+
+    async def aclose(self):
+        if self.client is not None:
+            await self.client.aclose()
+    
+    def close(self):
+        if self.client is not None:
+            asyncio.run(self.aclose())
+
+
     @validator("api_key", pre=True, always=True)
     def validate_api_key(cls, v: str) -> str:
         """Validate the API key."""
@@ -157,8 +177,7 @@ class LlamaParse(BasePydanticReader):
     async def _create_job(
         self, file_input: FileInput, extra_info: Optional[dict] = None
     ) -> str:
-        headers = {"Authorization": f"Bearer {self.api_key}"}
-        url = f"{self.base_url}/api/parsing/upload"
+        url = "/api/parsing/upload"
         files = None
         file_handle = None
 
@@ -220,17 +239,15 @@ class LlamaParse(BasePydanticReader):
             data["target_pages"] = self.target_pages
 
         try:
-            async with httpx.AsyncClient(timeout=self.max_timeout) as client:
-                response = await client.post(
-                    url,
-                    files=files,
-                    headers=headers,
-                    data=data,
-                )
-                if not response.is_success:
-                    raise Exception(f"Failed to parse the file: {response.text}")
-                job_id = response.json()["id"]
-                return job_id
+            response = await self.client.post(
+                url,
+                files=files,
+                data=data,
+            )
+            if not response.is_success:
+                raise Exception(f"Failed to parse the file: {response.text}")
+            job_id = response.json()["id"]
+            return job_id
         finally:
             if file_handle is not None:
                 file_handle.close()
@@ -238,49 +255,46 @@ class LlamaParse(BasePydanticReader):
     async def _get_job_result(
         self, job_id: str, result_type: str, verbose: bool = False
     ) -> dict:
-        result_url = f"{self.base_url}/api/parsing/job/{job_id}/result/{result_type}"
-        status_url = f"{self.base_url}/api/parsing/job/{job_id}"
-        headers = {"Authorization": f"Bearer {self.api_key}"}
+        result_url = f"/api/parsing/job/{job_id}/result/{result_type}"
+        status_url = f"/api/parsing/job/{job_id}"
 
         start = time.time()
         tries = 0
         while True:
-            await asyncio.sleep(self.check_interval)
-            async with httpx.AsyncClient(timeout=self.max_timeout) as client:
-                tries += 1
+            tries += 1
 
-                result = await client.get(status_url, headers=headers)
+            result = await self.client.get(status_url)
 
-                if result.status_code != 200:
-                    end = time.time()
-                    if end - start > self.max_timeout:
-                        raise Exception(f"Timeout while parsing the file: {job_id}")
-                    if verbose and tries % 10 == 0:
-                        print(".", end="", flush=True)
+            if result.status_code != 200:
+                end = time.time()
+                if end - start > self.max_timeout:
+                    raise Exception(f"Timeout while parsing the file: {job_id}")
+                if verbose and tries % 10 == 0:
+                    print(".", end="", flush=True)
 
-                    await asyncio.sleep(self.check_interval)
+                await asyncio.sleep(self.check_interval)
 
-                    continue
+                continue
 
-                # Allowed values "PENDING", "SUCCESS", "ERROR", "CANCELED"
-                status = result.json()["status"]
-                if status == "SUCCESS":
-                    parsed_result = await client.get(result_url, headers=headers)
-                    return parsed_result.json()
-                elif status == "PENDING":
-                    end = time.time()
-                    if end - start > self.max_timeout:
-                        raise Exception(f"Timeout while parsing the file: {job_id}")
-                    if verbose and tries % 10 == 0:
-                        print(".", end="", flush=True)
+            # Allowed values "PENDING", "SUCCESS", "ERROR", "CANCELED"
+            status = result.json()["status"]
+            if status == "SUCCESS":
+                parsed_result = await self.client.get(result_url)
+                return parsed_result.json()
+            elif status == "PENDING":
+                end = time.time()
+                if end - start > self.max_timeout:
+                    raise Exception(f"Timeout while parsing the file: {job_id}")
+                if verbose and tries % 10 == 0:
+                    print(".", end="", flush=True)
 
-                    await asyncio.sleep(self.check_interval)
+                await asyncio.sleep(self.check_interval)
 
-                    continue
-                else:
-                    raise Exception(
-                        f"Failed to parse the file: {job_id}, status: {status}"
-                    )
+                continue
+            else:
+                raise Exception(
+                    f"Failed to parse the file: {job_id}, status: {status}"
+                )
 
     async def _aload_data(
         self,
@@ -435,31 +449,33 @@ class LlamaParse(BasePydanticReader):
                 raise RuntimeError(nest_asyncio_msg)
             else:
                 raise e
+            
 
-    def get_images(self, json_result: List[dict], download_path: str) -> List[dict]:
+    async def _aget_image(self, image: dict) -> None:
+        """Download an image from the parsed result."""
+        image_path = image["path"]
+
+        async with aiofiles.open(image_path, "wb") as f:
+            image_url = f"/api/parsing/job/{image['job_id']}/result/image/{image['name']}"
+            response = await self.client.get(image_url)
+            await f.write(response.content)
+
+        
+    async def aget_images(self, json_result: List[dict], download_path: str) -> List[dict]:
         """Download images from the parsed result."""
-        headers = {"Authorization": f"Bearer {self.api_key}"}
 
-        # make the download path
         if not os.path.exists(download_path):
             os.makedirs(download_path)
 
         try:
             images = []
+            tasks = []
             for result in json_result:
                 job_id = result["job_id"]
                 for page in result["pages"]:
-                    if self.verbose:
-                        print(f"> Image for page {page['page']}: {page['images']}")
                     for image in page["images"]:
                         image_name = image["name"]
-
-                        # get the full path
-                        image_path = os.path.join(
-                            download_path, f"{job_id}-{image_name}"
-                        )
-
-                        # get a valid image path
+                        image_path = os.path.join(download_path, f"{job_id}-{image_name}")
                         if not image_path.endswith(".png"):
                             if not image_path.endswith(".jpg"):
                                 image_path += ".png"
@@ -468,15 +484,26 @@ class LlamaParse(BasePydanticReader):
                         image["job_id"] = job_id
                         image["original_pdf_path"] = result["file_path"]
                         image["page_number"] = page["page"]
-                        with open(image_path, "wb") as f:
-                            image_url = f"{self.base_url}/api/parsing/job/{job_id}/result/image/{image_name}"
-                            f.write(httpx.get(image_url, headers=headers).content)
+                        tasks.append(asyncio.create_task(self._aget_image(image)))
                         images.append(image)
+
+            await asyncio.gather(*tasks)
+
             return images
         except Exception as e:
             print("Error while downloading images from the parsed result:", e)
             if self.ignore_errors:
                 return []
+            else:
+                raise e
+
+    def get_images(self, json_result: List[dict], download_path: str) -> List[dict]:
+        """Download images from the parsed result."""
+        try:
+            return asyncio.run(self.aget_images(json_result, download_path))
+        except RuntimeError as e:
+            if nest_asyncio_err in str(e):
+                raise RuntimeError(nest_asyncio_msg)
             else:
                 raise e
 
