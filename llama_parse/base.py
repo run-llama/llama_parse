@@ -398,7 +398,14 @@ class LlamaParse(BasePydanticReader):
 
             result = await self._get_job_result(job_id, "json")
             result["job_id"] = job_id
-            result["file_path"] = file_path
+
+            if isinstance(file_path, (bytes, BufferedIOBase)) and (not extra_info or "file_name" not in extra_info):
+                raise ValueError(
+                    "file_name must be provided in extra_info when passing bytes"
+                )
+                result["file_path"] = extra_info["file_name"]
+            else:
+                result["file_path"] = file_path
             return [result]
 
         except Exception as e:
