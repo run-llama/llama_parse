@@ -2,4 +2,3 @@
 __pycache__/
 *.pyc
 .DS_Store
-dev_notebooks/
