@@ -9,7 +9,7 @@ from typing import List, Optional, Union
 from io import BufferedIOBase
 
 from llama_index.core.async_utils import run_jobs
-from llama_index.core.bridge.pydantic import Field, validator
+from llama_index.core.bridge.pydantic import Field, field_validator
 from llama_index.core.constants import DEFAULT_BASE_URL
 from llama_index.core.readers.base import BasePydanticReader
 from llama_index.core.schema import Document
@@ -32,7 +32,11 @@ _DEFAULT_SEPARATOR = "\n---\n"
 class LlamaParse(BasePydanticReader):
     """A smart-parser for files."""
 
-    api_key: str = Field(default="", description="The API key for the LlamaParse API.")
+    api_key: str = Field(
+        default="",
+        description="The API key for the LlamaParse API.",
+        validate_default=True,
+    )
     base_url: str = Field(
         default=DEFAULT_BASE_URL,
         description="The base URL of the Llama Parsing API.",
@@ -137,9 +141,7 @@ class LlamaParse(BasePydanticReader):
 
     client: Optional[httpx.AsyncClient] = None
 
-    def __init__(self, **data):
-        super().__init__(**data)
-
+    def model_post_init(self, **kwargs):
         # this makes sure that the client is created when the class is initialized
         if self.client is None:
             self.client = httpx.AsyncClient(
@@ -157,7 +159,8 @@ class LlamaParse(BasePydanticReader):
             asyncio.run(self.aclose())
 
 
-    @validator("api_key", pre=True, always=True)
+    @field_validator("api_key", mode="before", check_fields=True)
+    @classmethod
     def validate_api_key(cls, v: str) -> str:
         """Validate the API key."""
         if not v:
@@ -170,7 +173,8 @@ class LlamaParse(BasePydanticReader):
 
         return v
 
-    @validator("base_url", pre=True, always=True)
+    @field_validator("base_url", mode="before", check_fields=True)
+    @classmethod
     def validate_base_url(cls, v: str) -> str:
         """Validate the base URL."""
         url = os.getenv("LLAMA_CLOUD_BASE_URL", None)
