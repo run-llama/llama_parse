@@ -141,7 +141,7 @@ class LlamaParse(BasePydanticReader):
 
     client: Optional[httpx.AsyncClient] = None
 
-    def model_post_init(self, **kwargs):
+    def model_post_init(self, __context):
         # this makes sure that the client is created when the class is initialized
         if self.client is None:
             self.client = httpx.AsyncClient(
