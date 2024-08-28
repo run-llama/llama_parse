@@ -6,13 +6,13 @@ LlamaParse directly integrates with [LlamaIndex](https://github.com/run-llama/ll
 
 Free plan is up to 1000 pages a day. Paid plan is free 7k pages per week + 0.3c per additional page.
 
-There is a sandbox available to test the API [**https://cloud.llamaindex.ai/parse ↗**](https://cloud.llamaindex.ai/parse)).
+There is a sandbox available to test the API [**https://cloud.llamaindex.ai/parse ↗**](https://cloud.llamaindex.ai/parse).
 
 Read below for some quickstart information, or see the [full documentation](https://docs.cloud.llamaindex.ai/).
 
 ## Getting Started
 
-First, login and get an api-key from [**https://cloud.llamaindex.ai/api-key ↗**](https://cloud.llamaindex.ai/api-key)).
+First, login and get an api-key from [**https://cloud.llamaindex.ai/api-key ↗**](https://cloud.llamaindex.ai/api-key).
 
 Then, make sure you have the latest LlamaIndex version installed.
 
