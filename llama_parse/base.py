@@ -137,6 +137,10 @@ class LlamaParse(BasePydanticReader):
         default=None,
         description="The model name for the vendor multimodal API.",
     )
+    take_screenshot: bool = Field(
+        default=False,
+        description="Whether to take a screenshot of the document.",
+    )
 
     @field_validator("api_key", mode="before", check_fields=True)
     @classmethod
@@ -206,6 +210,7 @@ class LlamaParse(BasePydanticReader):
             "vendor_multimodal_api_key": self.vendor_multimodal_api_key,
             "use_vendor_multimodal_model": self.use_vendor_multimodal_model,
             "vendor_multimodal_model_name": self.vendor_multimodal_model_name,
+            "take_screenshot": self.take_screenshot,
         }
 
         # only send page separator to server if it is not None
