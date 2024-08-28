@@ -10,7 +10,7 @@ Read below for some quickstart information, or see the [full documentation](http
 
 ## Getting Started
 
-First, login and get an api-key from [**https://cloud.llamaindex.ai ↗**](https://cloud.llamaindex.ai).
+First, login and get an api-key from [**https://cloud.llamaindex.ai/parse ↗**](https://cloud.llamaindex.ai/parse).
 
 Then, make sure you have the latest LlamaIndex version installed.
 
