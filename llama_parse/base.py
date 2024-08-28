@@ -139,7 +139,7 @@ class LlamaParse(BasePydanticReader):
     )
     take_screenshot: bool = Field(
         default=False,
-        description="Whether to take a screenshot of the document.",
+        description="Whether to take screenshot of each page of the document.",
     )
 
     @field_validator("api_key", mode="before", check_fields=True)
