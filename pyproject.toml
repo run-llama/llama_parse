@@ -14,7 +14,11 @@ packages = [{include = "llama_parse"}]
 [tool.poetry.dependencies]
 python = ">=3.8.1,<4.0"
 llama-index-core = ">=0.11.0"
+click = "^8.1.7"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
 ipykernel = "^6.29.0"
+
+[tool.poetry.scripts]
+lp-tool = "llama_parse.tool:cli"
