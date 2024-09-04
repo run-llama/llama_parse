@@ -481,7 +481,11 @@ class LlamaParse(BasePydanticReader):
                         image["page_number"] = page["page"]
                         with open(image_path, "wb") as f:
                             image_url = f"{self.base_url}/api/parsing/job/{job_id}/result/image/{image_name}"
-                            f.write(httpx.get(image_url, headers=headers).content)
+                            f.write(
+                                httpx.get(
+                                    image_url, headers=headers, timeout=self.max_timeout
+                                ).content
+                            )
                         images.append(image)
             return images
         except Exception as e:
