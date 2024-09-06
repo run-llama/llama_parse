@@ -460,7 +460,7 @@ class LlamaParse(BasePydanticReader):
             else:
                 raise e
 
-    async def get_images(
+    async def aget_images(
         self, json_result: List[dict], download_path: str
     ) -> List[dict]:
         """Download images from the parsed result."""
@@ -508,6 +508,16 @@ class LlamaParse(BasePydanticReader):
             print("Error while downloading images from the parsed result:", e)
             if self.ignore_errors:
                 return []
+            else:
+                raise e
+
+    def get_images(self, json_result: List[dict], download_path: str) -> List[dict]:
+        """Download images from the parsed result."""
+        try:
+            return asyncio.run(self.aget_images(json_result, download_path))
+        except RuntimeError as e:
+            if nest_asyncio_err in str(e):
+                raise RuntimeError(nest_asyncio_msg)
             else:
                 raise e
 
