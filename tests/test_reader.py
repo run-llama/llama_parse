@@ -102,7 +102,7 @@ def test_simple_page_progress_workers() -> None:
 )
 def test_custom_client() -> None:
     custom_client = AsyncClient(verify=False, timeout=10)
-    parser = LlamaParse(result_type="markdown", client=custom_client)
+    parser = LlamaParse(result_type="markdown", custom_client=custom_client)
     filepath = os.path.join(
         os.path.dirname(__file__), "test_files/attention_is_all_you_need.pdf"
     )
