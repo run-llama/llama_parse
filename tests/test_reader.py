@@ -1,5 +1,6 @@
 import os
 import pytest
+from httpx import AsyncClient
 from llama_parse import LlamaParse
 
 
@@ -92,4 +93,19 @@ def test_simple_page_progress_workers() -> None:
     )
     result = parser.load_data([filepath, filepath])
     assert len(result) == 2
+    assert len(result[0].text) > 0
+
+
+@pytest.mark.skipif(
+    os.environ.get("LLAMA_CLOUD_API_KEY", "") == "",
+    reason="LLAMA_CLOUD_API_KEY not set",
+)
+def test_custom_client() -> None:
+    custom_client = AsyncClient(verify=False, timeout=10)
+    parser = LlamaParse(result_type="markdown", custom_client=custom_client)
+    filepath = os.path.join(
+        os.path.dirname(__file__), "test_files/attention_is_all_you_need.pdf"
+    )
+    result = parser.load_data(filepath)
+    assert len(result) == 1
     assert len(result[0].text) > 0

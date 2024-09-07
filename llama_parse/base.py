@@ -4,7 +4,8 @@ import httpx
 import mimetypes
 import time
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import AsyncGenerator, List, Optional, Union
+from contextlib import asynccontextmanager
 from io import BufferedIOBase
 
 from llama_index.core.async_utils import run_jobs
@@ -141,6 +142,9 @@ class LlamaParse(BasePydanticReader):
         default=False,
         description="Whether to take screenshot of each page of the document.",
     )
+    custom_client: Optional[httpx.AsyncClient] = Field(
+        default=None, description="A custom HTTPX client to use for sending requests."
+    )
 
     @field_validator("api_key", mode="before", check_fields=True)
     @classmethod
@@ -162,6 +166,15 @@ class LlamaParse(BasePydanticReader):
         """Validate the base URL."""
         url = os.getenv("LLAMA_CLOUD_BASE_URL", None)
         return url or v or DEFAULT_BASE_URL
+
+    @asynccontextmanager
+    async def client_context(self) -> AsyncGenerator[httpx.AsyncClient, None]:
+        """Create a context for the HTTPX client."""
+        if self.custom_client is not None:
+            yield self.custom_client
+        else:
+            async with httpx.AsyncClient(timeout=self.max_timeout) as client:
+                yield client
 
     # upload a document and get back a job_id
     async def _create_job(
@@ -231,7 +244,7 @@ class LlamaParse(BasePydanticReader):
             data["target_pages"] = self.target_pages
 
         try:
-            async with httpx.AsyncClient(timeout=self.max_timeout) as client:
+            async with self.client_context() as client:
                 response = await client.post(
                     url,
                     files=files,
@@ -257,7 +270,7 @@ class LlamaParse(BasePydanticReader):
         tries = 0
         while True:
             await asyncio.sleep(self.check_interval)
-            async with httpx.AsyncClient(timeout=self.max_timeout) as client:
+            async with self.client_context() as client:
                 tries += 1
 
                 result = await client.get(status_url, headers=headers)
@@ -447,7 +460,9 @@ class LlamaParse(BasePydanticReader):
             else:
                 raise e
 
-    def get_images(self, json_result: List[dict], download_path: str) -> List[dict]:
+    async def aget_images(
+        self, json_result: List[dict], download_path: str
+    ) -> List[dict]:
         """Download images from the parsed result."""
         headers = {"Authorization": f"Bearer {self.api_key}"}
 
@@ -481,17 +496,28 @@ class LlamaParse(BasePydanticReader):
                         image["page_number"] = page["page"]
                         with open(image_path, "wb") as f:
                             image_url = f"{self.base_url}/api/parsing/job/{job_id}/result/image/{image_name}"
-                            f.write(
-                                httpx.get(
+                            async with self.client_context() as client:
+                                res = await client.get(
                                     image_url, headers=headers, timeout=self.max_timeout
-                                ).content
-                            )
+                                )
+                                res.raise_for_status()
+                                f.write(res.content)
                         images.append(image)
             return images
         except Exception as e:
             print("Error while downloading images from the parsed result:", e)
             if self.ignore_errors:
                 return []
+            else:
+                raise e
+
+    def get_images(self, json_result: List[dict], download_path: str) -> List[dict]:
+        """Download images from the parsed result."""
+        try:
+            return asyncio.run(self.aget_images(json_result, download_path))
+        except RuntimeError as e:
+            if nest_asyncio_err in str(e):
+                raise RuntimeError(nest_asyncio_msg)
             else:
                 raise e
 
