@@ -5,13 +5,14 @@ from io import TextIOWrapper
 import httpx
 import mimetypes
 import time
-from pathlib import Path, PurePath
+from pathlib import Path, PurePath, PurePosixPath
 from typing import Any, Dict, List, Optional, Union
+from io import BufferedIOBase
 
 from fsspec import AbstractFileSystem
 from fsspec.spec import AbstractBufferedFile
 from llama_index.core.async_utils import run_jobs
-from llama_index.core.bridge.pydantic import Field, validator
+from llama_index.core.bridge.pydantic import Field, field_validator
 from llama_index.core.constants import DEFAULT_BASE_URL
 from llama_index.core.readers.base import BasePydanticReader
 from llama_index.core.readers.file.base import get_default_fs
@@ -25,26 +26,21 @@ from llama_parse.utils import (
 )
 from copy import deepcopy
 
+# can put in a path to the file or the file bytes itself
+# if passing as bytes or a buffer, must provide the file_name in extra_info
+FileInput = Union[str, bytes, BufferedIOBase]
 
-def _get_sub_docs(docs: List[Document]) -> List[Document]:
-    """Split docs into pages, by separator."""
-    sub_docs = []
-    for doc in docs:
-        doc_chunks = doc.text.split("\n---\n")
-        for doc_chunk in doc_chunks:
-            sub_doc = Document(
-                text=doc_chunk,
-                metadata=deepcopy(doc.metadata),
-            )
-            sub_docs.append(sub_doc)
-
-    return sub_docs
+_DEFAULT_SEPARATOR = "\n---\n"
 
 
 class LlamaParse(BasePydanticReader):
     """A smart-parser for files."""
 
-    api_key: str = Field(default="", description="The API key for the LlamaParse API.")
+    api_key: str = Field(
+        default="",
+        description="The API key for the LlamaParse API.",
+        validate_default=True,
+    )
     base_url: str = Field(
         default=DEFAULT_BASE_URL,
         description="The base URL of the Llama Parsing API.",
@@ -100,7 +96,15 @@ class LlamaParse(BasePydanticReader):
     )
     page_separator: Optional[str] = Field(
         default=None,
-        description="The page separator to use to split the text. Default is None, which means the parser will use the default separator '\\n---\\n'.",
+        description="A templated  page separator to use to split the text.  If it contain `{page_number}`,it will be replaced by the next page number. If not set will the default separator '\\n---\\n' will be used.",
+    )
+    page_prefix: Optional[str] = Field(
+        default=None,
+        description="A templated prefix to add to the beginning of each page. If it contain `{page_number}`, it will be replaced by the page number.",
+    )
+    page_suffix: Optional[str] = Field(
+        default=None,
+        description="A templated suffix to add to the beginning of each page. If it contain `{page_number}`, it will be replaced by the page number.",
     )
     gpt4o_mode: bool = Field(
         default=False,
@@ -124,10 +128,27 @@ class LlamaParse(BasePydanticReader):
     )
     split_by_page: bool = Field(
         default=True,
-        description="Whether to split by page (NOTE: using a predefined separator `\n---\n`)",
+        description="Whether to split by page using the page separator",
+    )
+    vendor_multimodal_api_key: Optional[str] = Field(
+        default=None,
+        description="The API key for the multimodal API.",
+    )
+    use_vendor_multimodal_model: bool = Field(
+        default=False,
+        description="Whether to use the vendor multimodal API.",
+    )
+    vendor_multimodal_model_name: Optional[str] = Field(
+        default=None,
+        description="The model name for the vendor multimodal API.",
+    )
+    take_screenshot: bool = Field(
+        default=False,
+        description="Whether to take screenshot of each page of the document.",
     )
 
-    @validator("api_key", pre=True, always=True)
+    @field_validator("api_key", mode="before", check_fields=True)
+    @classmethod
     def validate_api_key(cls, v: str) -> str:
         """Validate the API key."""
         if not v:
@@ -140,7 +161,8 @@ class LlamaParse(BasePydanticReader):
 
         return v
 
-    @validator("base_url", pre=True, always=True)
+    @field_validator("base_url", mode="before", check_fields=True)
+    @classmethod
     def validate_base_url(cls, v: str) -> str:
         """Validate the base URL."""
         url = os.getenv("LLAMA_CLOUD_BASE_URL", None)
@@ -149,59 +171,90 @@ class LlamaParse(BasePydanticReader):
     # upload a document and get back a job_id
     async def _create_job(
         self,
-        file_path: Union[str, PurePath],
-        extra_info: Optional[Dict[str, Any]] = None,
+        file_input: FileInput,
+        extra_info: Optional[dict] = None,
         fs: Optional[AbstractFileSystem] = None,
     ) -> str:
-        str_file_path = file_path
-        if isinstance(file_path, PurePath):
-            str_file_path = file_path.name
-        file_ext = os.path.splitext(str_file_path)[1]
-        if file_ext not in SUPPORTED_FILE_TYPES:
-            raise Exception(
-                f"Currently, only the following file types are supported: {SUPPORTED_FILE_TYPES}\n"
-                f"Current file type: {file_ext}"
+        headers = {"Authorization": f"Bearer {self.api_key}"}
+        url = f"{self.base_url}/api/parsing/upload"
+        files = None
+        file_handle = None
+
+        if isinstance(file_input, (bytes, BufferedIOBase)):
+            if not extra_info or "file_name" not in extra_info:
+                raise ValueError(
+                    "file_name must be provided in extra_info when passing bytes"
+                )
+            file_name = extra_info["file_name"]
+            mime_type = mimetypes.guess_type(file_name)[0]
+            files = {"file": (file_name, file_input, mime_type)}
+        elif isinstance(file_input, (str, Path, PurePosixPath, PurePath)):
+            file_path = str(file_input)
+            file_ext = os.path.splitext(file_path)[1].lower()
+            if file_ext not in SUPPORTED_FILE_TYPES:
+                raise Exception(
+                    f"Currently, only the following file types are supported: {SUPPORTED_FILE_TYPES}\n"
+                    f"Current file type: {file_ext}"
+                )
+            mime_type = mimetypes.guess_type(file_path)[0]
+            # Open the file here for the duration of the async context
+            # load data, set the mime type
+            fs = fs or get_default_fs()
+            file_handle = fs.open(file_input, "rb")
+            files = {"file": (os.path.basename(file_path), file_handle, mime_type)}
+        else:
+            raise ValueError(
+                "file_input must be either a file path string, file bytes, or buffer object"
             )
 
-        extra_info = extra_info or {}
-        extra_info["file_path"] = str_file_path
+        data = {
+            "language": self.language.value,
+            "parsing_instruction": self.parsing_instruction,
+            "invalidate_cache": self.invalidate_cache,
+            "skip_diagonal_text": self.skip_diagonal_text,
+            "do_not_cache": self.do_not_cache,
+            "fast_mode": self.fast_mode,
+            "do_not_unroll_columns": self.do_not_unroll_columns,
+            "gpt4o_mode": self.gpt4o_mode,
+            "gpt4o_api_key": self.gpt4o_api_key,
+            "vendor_multimodal_api_key": self.vendor_multimodal_api_key,
+            "use_vendor_multimodal_model": self.use_vendor_multimodal_model,
+            "vendor_multimodal_model_name": self.vendor_multimodal_model_name,
+            "take_screenshot": self.take_screenshot,
+        }
 
-        headers = {"Authorization": f"Bearer {self.api_key}"}
+        # only send page separator to server if it is not None
+        # as if a null, "" string is sent the server will then ignore the page separator instead of using the default
+        if self.page_separator is not None:
+            data["page_separator"] = self.page_separator
 
-        # load data, set the mime type
-        fs = fs or get_default_fs()
-        with fs.open(file_path, "rb") as f:
-            mime_type = mimetypes.guess_type(str_file_path)[0]
-            files = {"file": (self.__get_filename(f), f, mime_type)}
+        if self.page_prefix is not None:
+            data["page_prefix"] = self.page_prefix
 
-            # send the request, start job
-            url = f"{self.base_url}/api/parsing/upload"
+        if self.page_suffix is not None:
+            data["page_suffix"] = self.page_suffix
+
+        if self.bounding_box is not None:
+            data["bounding_box"] = self.bounding_box
+
+        if self.target_pages is not None:
+            data["target_pages"] = self.target_pages
+
+        try:
             async with httpx.AsyncClient(timeout=self.max_timeout) as client:
                 response = await client.post(
                     url,
                     files=files,
                     headers=headers,
-                    data={
-                        "language": self.language.value,
-                        "parsing_instruction": self.parsing_instruction,
-                        "invalidate_cache": self.invalidate_cache,
-                        "skip_diagonal_text": self.skip_diagonal_text,
-                        "do_not_cache": self.do_not_cache,
-                        "fast_mode": self.fast_mode,
-                        "do_not_unroll_columns": self.do_not_unroll_columns,
-                        "page_separator": self.page_separator,
-                        "gpt4o_mode": self.gpt4o_mode,
-                        "gpt4o_api_key": self.gpt4o_api_key,
-                        "bounding_box": self.bounding_box,
-                        "target_pages": self.target_pages,
-                    },
+                    data=data,
                 )
                 if not response.is_success:
                     raise Exception(f"Failed to parse the file: {response.text}")
-
-        # check the status of the job, return when done
-        job_id = response.json()["id"]
-        return job_id
+                job_id = response.json()["id"]
+                return job_id
+        finally:
+            if file_handle is not None:
+                file_handle.close()
 
     @staticmethod
     def __get_filename(f: Union[TextIOWrapper, AbstractBufferedFile]) -> str:
@@ -252,8 +305,8 @@ class LlamaParse(BasePydanticReader):
 
     async def _aload_data(
         self,
-        file_path: Union[str, PurePath],
-        extra_info: Optional[Dict[str, Any]] = None,
+        file_path: FileInput,
+        extra_info: Optional[dict] = None,
         fs: Optional[AbstractFileSystem] = None,
         verbose: bool = False,
     ) -> List[Document]:
@@ -274,12 +327,13 @@ class LlamaParse(BasePydanticReader):
                 )
             ]
             if self.split_by_page:
-                return _get_sub_docs(docs)
+                return self._get_sub_docs(docs)
             else:
                 return docs
 
         except Exception as e:
-            print(f"Error while parsing the file '{file_path}':", e)
+            file_repr = file_path if isinstance(file_path, str) else "<bytes/buffer>"
+            print(f"Error while parsing the file '{file_repr}':", e)
             if self.ignore_errors:
                 return []
             else:
@@ -287,12 +341,12 @@ class LlamaParse(BasePydanticReader):
 
     async def aload_data(
         self,
-        file_path: Union[List[str], str, PurePath, List[PurePath]],
-        extra_info: Optional[Dict[str, Any]] = None,
+        file_path: Union[List[FileInput], FileInput],
+        extra_info: Optional[dict] = None,
         fs: Optional[AbstractFileSystem] = None,
     ) -> List[Document]:
         """Load data from the input path."""
-        if isinstance(file_path, (str, PurePath)):
+        if isinstance(file_path, (str, Path, bytes, BufferedIOBase)):
             return await self._aload_data(
                 file_path, extra_info=extra_info, fs=fs, verbose=self.verbose
             )
@@ -328,8 +382,8 @@ class LlamaParse(BasePydanticReader):
 
     def load_data(
         self,
-        file_path: Union[List[str], str, PurePath, List[PurePath]],
-        extra_info: Optional[Dict[str, Any]] = None,
+        file_path: Union[List[FileInput], FileInput],
+        extra_info: Optional[dict] = None,
         fs: Optional[AbstractFileSystem] = None,
     ) -> List[Document]:
         """Load data from the input path."""
@@ -342,7 +396,7 @@ class LlamaParse(BasePydanticReader):
                 raise e
 
     async def _aget_json(
-        self, file_path: str, extra_info: Optional[dict] = None
+        self, file_path: FileInput, extra_info: Optional[dict] = None
     ) -> List[dict]:
         """Load data from the input path."""
         try:
@@ -356,14 +410,17 @@ class LlamaParse(BasePydanticReader):
             return [result]
 
         except Exception as e:
-            print(f"Error while parsing the file '{file_path}':", e)
+            file_repr = file_path if isinstance(file_path, str) else "<bytes/buffer>"
+            print(f"Error while parsing the file '{file_repr}':", e)
             if self.ignore_errors:
                 return []
             else:
                 raise e
 
     async def aget_json(
-        self, file_path: Union[List[str], str], extra_info: Optional[dict] = None
+        self,
+        file_path: Union[List[FileInput], FileInput],
+        extra_info: Optional[dict] = None,
     ) -> List[dict]:
         """Load data from the input path."""
         if isinstance(file_path, (str, Path)):
@@ -391,7 +448,9 @@ class LlamaParse(BasePydanticReader):
             )
 
     def get_json_result(
-        self, file_path: Union[List[str], str], extra_info: Optional[dict] = None
+        self,
+        file_path: Union[List[FileInput], FileInput],
+        extra_info: Optional[dict] = None,
     ) -> List[dict]:
         """Parse the input path."""
         try:
@@ -438,7 +497,11 @@ class LlamaParse(BasePydanticReader):
                         image["page_number"] = page["page"]
                         with open(image_path, "wb") as f:
                             image_url = f"{self.base_url}/api/parsing/job/{job_id}/result/image/{image_name}"
-                            f.write(httpx.get(image_url, headers=headers).content)
+                            f.write(
+                                httpx.get(
+                                    image_url, headers=headers, timeout=self.max_timeout
+                                ).content
+                            )
                         images.append(image)
             return images
         except Exception as e:
@@ -447,3 +510,18 @@ class LlamaParse(BasePydanticReader):
                 return []
             else:
                 raise e
+
+    def _get_sub_docs(self, docs: List[Document]) -> List[Document]:
+        """Split docs into pages, by separator."""
+        sub_docs = []
+        separator = self.page_separator or _DEFAULT_SEPARATOR
+        for doc in docs:
+            doc_chunks = doc.text.split(separator)
+            for doc_chunk in doc_chunks:
+                sub_doc = Document(
+                    text=doc_chunk,
+                    metadata=deepcopy(doc.metadata),
+                )
+                sub_docs.append(sub_doc)
+
+        return sub_docs

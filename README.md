@@ -6,11 +6,13 @@ LlamaParse directly integrates with [LlamaIndex](https://github.com/run-llama/ll
 
 Free plan is up to 1000 pages a day. Paid plan is free 7k pages per week + 0.3c per additional page.
 
+There is a sandbox available to test the API [**https://cloud.llamaindex.ai/parse ↗**](https://cloud.llamaindex.ai/parse).
+
 Read below for some quickstart information, or see the [full documentation](https://docs.cloud.llamaindex.ai/).
 
 ## Getting Started
 
-First, login and get an api-key from [**https://cloud.llamaindex.ai ↗**](https://cloud.llamaindex.ai).
+First, login and get an api-key from [**https://cloud.llamaindex.ai/api-key ↗**](https://cloud.llamaindex.ai/api-key).
 
 Then, make sure you have the latest LlamaIndex version installed.
 
@@ -53,6 +55,34 @@ documents = await parser.aload_data("./my_file.pdf")
 
 # async batch
 documents = await parser.aload_data(["./my_file1.pdf", "./my_file2.pdf"])
+```
+
+## Using with file object
+
+You can parse a file object directly:
+
+```python
+import nest_asyncio
+
+nest_asyncio.apply()
+
+from llama_parse import LlamaParse
+
+parser = LlamaParse(
+    api_key="llx-...",  # can also be set in your env as LLAMA_CLOUD_API_KEY
+    result_type="markdown",  # "markdown" and "text" are available
+    num_workers=4,  # if multiple files passed, split in `num_workers` API calls
+    verbose=True,
+    language="en",  # Optionally you can define a language, default=en
+)
+
+with open("./my_file1.pdf", "rb") as f:
+    documents = parser.load_data(f)
+
+# you can also pass file bytes directly
+with open("./my_file1.pdf", "rb") as f:
+    file_bytes = f.read()
+    documents = parser.load_data(file_bytes)
 ```
 
 ## Using with `SimpleDirectoryReader`
