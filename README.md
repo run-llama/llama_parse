@@ -7,6 +7,7 @@
 LlamaParse is a **GenAI-native document parser** that can parse complex document data for any downstream LLM use case (RAG, agents).
 
 It is really good at the following:
+
 - ✅ **Broad file type support**: Parsing a variety of unstructured file types (.pdf, .pptx, .docx, .xlsx, .html) with text, tables, visual elements, weird layouts, and more.
 - ✅ **Table recognition**: Parsing embedded tables accurately into text and semi-structured representations.
 - ✅ **Multimodal parsing and chunking**: Extracting visual elements (images/diagrams) into structured formats and return image chunks using the latest multimodal models.
