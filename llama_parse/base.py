@@ -6,7 +6,7 @@ import httpx
 import mimetypes
 import time
 from pathlib import Path, PurePath, PurePosixPath
-from typing import AsyncGenerator, List, Optional, Union
+from typing import AsyncGenerator, Any, Dict, List, Optional, Union
 from contextlib import asynccontextmanager
 from io import BufferedIOBase
 
