@@ -508,10 +508,7 @@ class LlamaParse(BasePydanticReader):
                         image["path"] = image_path
                         image["job_id"] = job_id
                     
-                        if isinstance(result["file_path"], str):
-                            image["original_file_path"] = result["file_path"]
-                        else:
-                            image["original_file_path"] = None
+                        image["original_file_path"] = result.get("file_path", None)
           
                         image["page_number"] = page["page"]
                         with open(image_path, "wb") as f:
