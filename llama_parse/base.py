@@ -419,8 +419,8 @@ class LlamaParse(BasePydanticReader):
             result = await self._get_job_result(job_id, "json")
             result["job_id"] = job_id
 
-            if isinstance(file_path, str):
-                result["file_path"] = file_path
+            if not isinstance(file_path, (bytes, BufferedIOBase)):
+                result["file_path"] = str(file_path)
             
             return [result]
         except Exception as e:
