@@ -419,7 +419,8 @@ class LlamaParse(BasePydanticReader):
 
             result = await self._get_job_result(job_id, "json")
             result["job_id"] = job_id
-            result["file_path"] = file_path
+            if isinstance(file_path, str):
+                result["file_path"] = file_path
             return [result]
 
         except Exception as e:
@@ -506,7 +507,11 @@ class LlamaParse(BasePydanticReader):
 
                         image["path"] = image_path
                         image["job_id"] = job_id
-                        image["original_pdf_path"] = result["file_path"]
+                    
+                        if isinstance(result["file_path"], str):
+                            image["original_file_path"] = result["file_path"]
+                        else:
+                            image["original_file_path"] = None
                         image["page_number"] = page["page"]
                         with open(image_path, "wb") as f:
                             image_url = f"{self.base_url}/api/parsing/job/{job_id}/result/image/{image_name}"
