@@ -416,12 +416,13 @@ class LlamaParse(BasePydanticReader):
             job_id = await self._create_job(file_path, extra_info=extra_info)
             if self.verbose:
                 print("Started parsing the file under job_id %s" % job_id)
-
             result = await self._get_job_result(job_id, "json")
             result["job_id"] = job_id
-            result["file_path"] = file_path
-            return [result]
 
+            if not isinstance(file_path, (bytes, BufferedIOBase)):
+                result["file_path"] = str(file_path)
+
+            return [result]
         except Exception as e:
             file_repr = file_path if isinstance(file_path, str) else "<bytes/buffer>"
             print(f"Error while parsing the file '{file_repr}':", e)
@@ -506,7 +507,9 @@ class LlamaParse(BasePydanticReader):
 
                         image["path"] = image_path
                         image["job_id"] = job_id
-                        image["original_pdf_path"] = result["file_path"]
+
+                        image["original_file_path"] = result.get("file_path", None)
+
                         image["page_number"] = page["page"]
                         with open(image_path, "wb") as f:
                             image_url = f"{self.base_url}/api/parsing/job/{job_id}/result/image/{image_name}"
