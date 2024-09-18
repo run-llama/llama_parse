@@ -91,6 +91,10 @@ class LlamaParse(BasePydanticReader):
         default=False,
         description="Note: Non compatible with gpt-4o. If set to true, the parser will use a faster mode to extract text from documents. This mode will skip OCR of images, and table/heading reconstruction.",
     )
+    premium_mode: bool = Field(
+        default=False,
+        description="Use our best parser mode if set to True.",
+    )
     do_not_unroll_columns: Optional[bool] = Field(
         default=False,
         description="If set to true, the parser will keep column in the text according to document layout. Reduce reconstruction accuracy, and LLM's/embedings performances in most case.",
@@ -227,6 +231,7 @@ class LlamaParse(BasePydanticReader):
             "skip_diagonal_text": self.skip_diagonal_text,
             "do_not_cache": self.do_not_cache,
             "fast_mode": self.fast_mode,
+            "premium_mode": self.premium_mode,
             "do_not_unroll_columns": self.do_not_unroll_columns,
             "gpt4o_mode": self.gpt4o_mode,
             "gpt4o_api_key": self.gpt4o_api_key,
