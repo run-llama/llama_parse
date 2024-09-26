@@ -87,13 +87,18 @@ parser = LlamaParse(
     language="en",  # Optionally you can define a language, default=en
 )
 
-with open("./my_file1.pdf", "rb") as f:
-    documents = parser.load_data(f)
+file_name = "my_file1.pdf"
+extra_info = {"file_name": file_name}
+
+with open(f"./{file_name}", "rb") as f:
+    # must provide extra_info with file_name key with passing file object
+    documents = parser.load_data(f, extra_info=extra_info)
 
 # you can also pass file bytes directly
-with open("./my_file1.pdf", "rb") as f:
+with open(f"./{file_name}", "rb") as f:
     file_bytes = f.read()
-    documents = parser.load_data(file_bytes)
+    # must provide extra_info with file_name key with passing file bytes
+    documents = parser.load_data(file_bytes, extra_info=extra_info)
 ```
 
 ## Using with `SimpleDirectoryReader`
