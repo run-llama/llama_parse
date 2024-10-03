@@ -308,7 +308,8 @@ class LlamaParse(BasePydanticReader):
                     continue
 
                 # Allowed values "PENDING", "SUCCESS", "ERROR", "CANCELED"
-                status = result.json()["status"]
+                result_json = result.json()
+                status = result_json["status"]
                 if status == "SUCCESS":
                     parsed_result = await client.get(result_url, headers=headers)
                     return parsed_result.json()
@@ -320,6 +321,14 @@ class LlamaParse(BasePydanticReader):
                         print(".", end="", flush=True)
 
                     await asyncio.sleep(self.check_interval)
+                else:
+                    error_code = result_json.get("error_code", "No error code found")
+                    error_message = result_json.get(
+                        "error_message", "No error message found"
+                    )
+
+                    exception_str = f"Job ID: {job_id} failed with status: {status}, Error code: {error_code}, Error message: {error_message}"
+                    raise Exception(exception_str)
 
     async def _aload_data(
         self,
