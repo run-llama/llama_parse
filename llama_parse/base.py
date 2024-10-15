@@ -154,6 +154,31 @@ class LlamaParse(BasePydanticReader):
     custom_client: Optional[httpx.AsyncClient] = Field(
         default=None, description="A custom HTTPX client to use for sending requests."
     )
+    disable_ocr: bool = Field(
+        default=False,
+        description="Disable the OCR on the document. LlamaParse will only extract the copyable text from the document.",
+    )
+    # Coming Soon
+    # annotate_links: bool = Field(
+    #     default=False,
+    #     description="Annotate links found in the document to extract their URL.",
+    # )
+    webhook_url: Optional[str] = Field(
+        default=None,
+        description="A URL that needs to be called at the end of the parsing job.",
+    )
+    azure_openai_deployment_name: Optional[str] = Field(
+        default=None, description="Azure Openai Deployment Name"
+    )
+    azure_openai_endpoint: Optional[str] = Field(
+        default=None, description="Azure Openai Endpoint"
+    )
+    azure_openai_api_version: Optional[str] = Field(
+        default=None, description="Azure Openai API Version"
+    )
+    azure_openai_key: Optional[str] = Field(
+        default=None, description="Azure Openai Key"
+    )
 
     @field_validator("api_key", mode="before", check_fields=True)
     @classmethod
@@ -239,6 +264,8 @@ class LlamaParse(BasePydanticReader):
             "use_vendor_multimodal_model": self.use_vendor_multimodal_model,
             "vendor_multimodal_model_name": self.vendor_multimodal_model_name,
             "take_screenshot": self.take_screenshot,
+            "disable_ocr": self.disable_ocr,
+            # "annotate_links": self.annotate_links,
         }
 
         # only send page separator to server if it is not None
@@ -257,6 +284,22 @@ class LlamaParse(BasePydanticReader):
 
         if self.target_pages is not None:
             data["target_pages"] = self.target_pages
+
+        if self.webhook_url is not None:
+            data["webhook_url"] = self.webhook_url
+
+        # Azure OpenAI
+        if self.azure_openai_deployment_name is not None:
+            data["azure_openai_deployment_name"] = self.azure_openai_deployment_name
+
+        if self.azure_openai_endpoint is not None:
+            data["azure_openai_endpoint"] = self.azure_openai_endpoint
+
+        if self.azure_openai_api_version is not None:
+            data["azure_openai_api_version"] = self.azure_openai_api_version
+
+        if self.azure_openai_key is not None:
+            data["azure_openai_key"] = self.azure_openai_key
 
         try:
             async with self.client_context() as client:
