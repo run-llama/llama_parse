@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "llama-parse"
-version = "0.5.8"
+version = "0.5.9"
 description = "Parse files into RAG-Optimized formats."
 authors = ["Logan Markewich <logan@llamaindex.ai>"]
 license = "MIT"
@@ -21,4 +21,4 @@ pytest = "^8.0.0"
 ipykernel = "^6.29.0"
 
 [tool.poetry.scripts]
-lp-tool = "llama_parse.tool:cli"
+llama-parse = "llama_parse.cli.main:parse"

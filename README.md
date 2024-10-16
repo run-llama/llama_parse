@@ -38,12 +38,19 @@ Lastly, install the package:
 
 `pip install llama-parse`
 
-Now you can parse your first PDF file using the command line interface. Use the command `lp-tool` if using the poetry package manager or `python -m llama_parse.tool` otherwise.
+Now you can parse your first PDF file using the command line interface. Use the command `llama-parse [file_paths]`. See the help text with `llama-parse --help`.
 
 ```bash
 export LLAMA_CLOUD_API_KEY='llx-...'
-lp-tool parse my_file.pdf # poetry
-python -m llama_parse.tool parse my_file.pdf # otherwise
+
+# output as text
+llama-parse my_file.pdf --result-type text --output-file output.txt
+
+# output as markdown
+llama-parse my_file.pdf --result-type markdown --output-file output.md
+
+# output as raw json
+llama-parse my_file.pdf --output-raw-json --output-file output.json
 ```
 
 You can also create simple scripts:
