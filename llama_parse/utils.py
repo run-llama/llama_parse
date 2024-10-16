@@ -10,7 +10,6 @@ class ResultType(str, Enum):
 
     TXT = "text"
     MD = "markdown"
-    JSON = "json"
 
 
 class Language(str, Enum):
