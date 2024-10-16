@@ -38,7 +38,22 @@ Lastly, install the package:
 
 `pip install llama-parse`
 
-Now you can run the following to parse your first PDF file:
+Now you can parse your first PDF file using the command line interface. Use the command `llama-parse [file_paths]`. See the help text with `llama-parse --help`.
+
+```bash
+export LLAMA_CLOUD_API_KEY='llx-...'
+
+# output as text
+llama-parse my_file.pdf --result-type text --output-file output.txt
+
+# output as markdown
+llama-parse my_file.pdf --result-type markdown --output-file output.md
+
+# output as raw json
+llama-parse my_file.pdf --output-raw-json --output-file output.json
+```
+
+You can also create simple scripts:
 
 ```python
 import nest_asyncio
