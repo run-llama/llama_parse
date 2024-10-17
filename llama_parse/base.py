@@ -158,6 +158,10 @@ class LlamaParse(BasePydanticReader):
         default=False,
         description="Disable the OCR on the document. LlamaParse will only extract the copyable text from the document.",
     )
+    is_formatting_instruction: bool = Field(
+        default=False,
+        description="Allow the parsing instruction to also format the output. Disable to have a cleaner markdown output.",
+    )
     # Coming Soon
     # annotate_links: bool = Field(
     #     default=False,
@@ -265,6 +269,7 @@ class LlamaParse(BasePydanticReader):
             "vendor_multimodal_model_name": self.vendor_multimodal_model_name,
             "take_screenshot": self.take_screenshot,
             "disable_ocr": self.disable_ocr,
+            "is_formatting_instruction": self.is_formatting_instruction,
             # "annotate_links": self.annotate_links,
         }
 
