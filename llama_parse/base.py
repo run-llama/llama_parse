@@ -158,11 +158,14 @@ class LlamaParse(BasePydanticReader):
         default=False,
         description="Disable the OCR on the document. LlamaParse will only extract the copyable text from the document.",
     )
-    # Coming Soon
-    # annotate_links: bool = Field(
-    #     default=False,
-    #     description="Annotate links found in the document to extract their URL.",
-    # )
+    is_formatting_instruction: bool = Field(
+        default=True,
+        description="Allow the parsing instruction to also format the output. Disable to have a cleaner markdown output.",
+    )
+    annotate_links: bool = Field(
+        default=False,
+        description="Annotate links found in the document to extract their URL.",
+    )
     webhook_url: Optional[str] = Field(
         default=None,
         description="A URL that needs to be called at the end of the parsing job.",
@@ -265,7 +268,8 @@ class LlamaParse(BasePydanticReader):
             "vendor_multimodal_model_name": self.vendor_multimodal_model_name,
             "take_screenshot": self.take_screenshot,
             "disable_ocr": self.disable_ocr,
-            # "annotate_links": self.annotate_links,
+            "is_formatting_instruction": self.is_formatting_instruction,
+            "annotate_links": self.annotate_links,
         }
 
         # only send page separator to server if it is not None
