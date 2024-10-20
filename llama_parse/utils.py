@@ -96,6 +96,7 @@ class Language(str, Enum):
     URDU = "ur"
     UZBEK = "uz"
     VIETNAMESE = "vi"
+    GREEK = "el"
 
 
 SUPPORTED_FILE_TYPES = [
