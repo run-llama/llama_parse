@@ -25,9 +25,7 @@ Please remove untested options:
  - Typescript Library
  - Notebook
 
-**Options**
-
 **Additional context**
 Add any additional context about the problem here.
-What options did you use? Multimodal, fast mode, parsing instructions, etc.
+What options did you use? Premium mode, multimodal, fast mode, parsing instructions, etc.
 Screenshots, code snippets, etc.
