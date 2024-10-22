@@ -95,6 +95,10 @@ class LlamaParse(BasePydanticReader):
         default=False,
         description="Use our best parser mode if set to True.",
     )
+    continuous_mode: bool = Field(
+        default=False,
+        description="Parse documents continuously, leading to better results on documents where tables span across two pages.",
+    )
     do_not_unroll_columns: Optional[bool] = Field(
         default=False,
         description="If set to true, the parser will keep column in the text according to document layout. Reduce reconstruction accuracy, and LLM's/embedings performances in most case.",
@@ -260,6 +264,7 @@ class LlamaParse(BasePydanticReader):
             "do_not_cache": self.do_not_cache,
             "fast_mode": self.fast_mode,
             "premium_mode": self.premium_mode,
+            "continuous_mode": self.continuous_mode,
             "do_not_unroll_columns": self.do_not_unroll_columns,
             "gpt4o_mode": self.gpt4o_mode,
             "gpt4o_api_key": self.gpt4o_api_key,
