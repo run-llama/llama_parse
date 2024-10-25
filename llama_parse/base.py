@@ -425,7 +425,7 @@ class LlamaParse(BasePydanticReader):
         fs: Optional[AbstractFileSystem] = None,
     ) -> List[Document]:
         """Load data from the input path."""
-        if isinstance(file_path, (str, Path, bytes, BufferedIOBase)):
+        if isinstance(file_path, (str, PurePosixPath, Path, bytes, BufferedIOBase)):
             return await self._aload_data(
                 file_path, extra_info=extra_info, fs=fs, verbose=self.verbose
             )
