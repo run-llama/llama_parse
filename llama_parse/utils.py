@@ -10,7 +10,6 @@ class ResultType(str, Enum):
 
     TXT = "text"
     MD = "markdown"
-    XLSX = "xlsx"
 
 
 class Language(str, Enum):
