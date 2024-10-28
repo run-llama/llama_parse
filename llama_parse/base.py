@@ -34,9 +34,100 @@ FileInput = Union[str, bytes, BufferedIOBase]
 _DEFAULT_SEPARATOR = "\n---\n"
 
 
-class LlamaParse(BasePydanticReader):
+class LlamaParseParams(BasePydanticReader):
+    bounding_box: Optional[str] = Field(
+        default=None,
+        description="The bounding box to use to extract text from documents describe as a string containing the bounding box margins",
+    )
+   
+    continuous_mode: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the parser will to merge together following tables",
+    )
+    do_not_cache: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the document will not be cached. This mean that you will be re-charged it you reprocess them as they will not be cached.",
+    )
+    do_not_unroll_columns: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the parser will keep column in the text according to document layout. Reduce reconstruction accuracy, and LLM's/embedings performances in most case.",
+    )
+    fast_mode: Optional[bool] = Field(
+        default=False,
+        description="Note: Non compatible with other modes. If set to true, the parser will use a faster mode to extract text from documents. This mode will skip OCR of images, and table/heading reconstruction.",
+    )
+    gpt4o_api_key: Optional[str] = Field(
+        default=None,
+        description="(deprecated use vendor_multimodal_model_name='gpt-4o' instead). The API key for the GPT-4o API. Lowers the cost of parsing.",
+    )
+    gpt4o_mode: bool = Field(
+        default=False,
+        description="(deprecated use vendor_multimodal_api_key='gpt-4o' instead). Whether to use gpt-4o extract text from documents.",
+    )
+    guess_xlsx_sheet_name: Optional[str] = Field(
+        default=False,
+        description="Experimental: If set to true, when outputting to xlsx, the parser will try to guess the sheet name based on the context of the table.",
+    )
+    ignore_errors: bool = Field(
+        default=True,
+        description="Whether or not to ignore and skip errors raised during parsing.",
+    )
+    invalidate_cache: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the cache will be ignored and the document re-processes. All document are kept in cache for 48hours after the job was completed to avoid processing the same document twice.",
+    )
+    language: Language = Field(
+        default=Language.ENGLISH, description="The language of the text to parse."
+    )
+    page_prefix: Optional[str] = Field(
+        default=None,
+        description="A templated prefix to add to the beginning of each page. If it contain `{page_number}`, it will be replaced by the page number.",
+    )
+    page_separator: Optional[str] = Field(
+        default=None,
+        description="A templated  page separator to use to split the text.  If it contain `{page_number}`,it will be replaced by the next page number. If not set will the default separator '\\n---\\n' will be used.",
+    )
+    page_suffix: Optional[str] = Field(
+        default=None,
+        description="A templated suffix to add to the beginning of each page. If it contain `{page_number}`, it will be replaced by the page number.",
+    )
+    parsing_instruction: Optional[str] = Field(
+        default="", description="The parsing instruction for the parser."
+    )
+    skip_diagonal_text: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the parser will ignore diagonal text (when the text rotation in degrees modulo 90 is not 0).",
+    )
+    split_by_page: bool = Field(
+        default=True,
+        description="Whether to split by page using the page separator",
+    )
+    take_screenshot: bool = Field(
+        default=False,
+        description="Whether to take screenshot of each page of the document.",
+    )
+    target_pages: Optional[str] = Field(
+        default=None,
+        description="The target pages to extract text from documents. Describe as a comma separated list of page numbers. The first page of the document is page 0",
+    )
+    use_vendor_multimodal_model: bool = Field(
+        default=False,
+        description="Whether to use the vendor multimodal API.",
+    )
+    vendor_multimodal_api_key: Optional[str] = Field(
+        default=None,
+        description="The API key for the multimodal API.",
+    )
+   
+    vendor_multimodal_model_name: Optional[str] = Field(
+        default=None,
+        description="The model name for the vendor multimodal API.",
+    )
+
+class LlamaParse(LlamaParseParams):
     """A smart-parser for files."""
 
+    """Package parameters"""
     api_key: str = Field(
         default="",
         description="The API key for the LlamaParse API.",
@@ -46,8 +137,12 @@ class LlamaParse(BasePydanticReader):
         default=DEFAULT_BASE_URL,
         description="The base URL of the Llama Parsing API.",
     )
-    result_type: ResultType = Field(
-        default=ResultType.TXT, description="The result type for the parser."
+    check_interval: int = Field(
+        default=1,
+        description="The interval in seconds to check if the parsing is done.",
+    )
+    custom_client: Optional[httpx.AsyncClient] = Field(
+        default=None, description="A custom HTTPX client to use for sending requests."
     )
     num_workers: int = Field(
         default=4,
@@ -55,138 +150,20 @@ class LlamaParse(BasePydanticReader):
         lt=10,
         description="The number of workers to use sending API requests for parsing.",
     )
-    check_interval: int = Field(
-        default=1,
-        description="The interval in seconds to check if the parsing is done.",
-    )
     max_timeout: int = Field(
         default=2000,
         description="The maximum timeout in seconds to wait for the parsing to finish.",
     )
-    verbose: bool = Field(
-        default=True, description="Whether to print the progress of the parsing."
+    result_type: ResultType = Field(
+        default=ResultType.TXT, description="The result type for the parser."
     )
     show_progress: bool = Field(
         default=True, description="Show progress when parsing multiple files."
     )
-    language: Language = Field(
-        default=Language.ENGLISH, description="The language of the text to parse."
+    verbose: bool = Field(
+        default=True, description="Whether to print the progress of the parsing."
     )
-    parsing_instruction: Optional[str] = Field(
-        default="", description="The parsing instruction for the parser."
-    )
-    skip_diagonal_text: Optional[bool] = Field(
-        default=False,
-        description="If set to true, the parser will ignore diagonal text (when the text rotation in degrees modulo 90 is not 0).",
-    )
-    invalidate_cache: Optional[bool] = Field(
-        default=False,
-        description="If set to true, the cache will be ignored and the document re-processes. All document are kept in cache for 48hours after the job was completed to avoid processing the same document twice.",
-    )
-    do_not_cache: Optional[bool] = Field(
-        default=False,
-        description="If set to true, the document will not be cached. This mean that you will be re-charged it you reprocess them as they will not be cached.",
-    )
-    fast_mode: Optional[bool] = Field(
-        default=False,
-        description="Note: Non compatible with gpt-4o. If set to true, the parser will use a faster mode to extract text from documents. This mode will skip OCR of images, and table/heading reconstruction.",
-    )
-    premium_mode: bool = Field(
-        default=False,
-        description="Use our best parser mode if set to True.",
-    )
-    continuous_mode: bool = Field(
-        default=False,
-        description="Parse documents continuously, leading to better results on documents where tables span across two pages.",
-    )
-    do_not_unroll_columns: Optional[bool] = Field(
-        default=False,
-        description="If set to true, the parser will keep column in the text according to document layout. Reduce reconstruction accuracy, and LLM's/embedings performances in most case.",
-    )
-    page_separator: Optional[str] = Field(
-        default=None,
-        description="A templated  page separator to use to split the text.  If it contain `{page_number}`,it will be replaced by the next page number. If not set will the default separator '\\n---\\n' will be used.",
-    )
-    page_prefix: Optional[str] = Field(
-        default=None,
-        description="A templated prefix to add to the beginning of each page. If it contain `{page_number}`, it will be replaced by the page number.",
-    )
-    page_suffix: Optional[str] = Field(
-        default=None,
-        description="A templated suffix to add to the beginning of each page. If it contain `{page_number}`, it will be replaced by the page number.",
-    )
-    gpt4o_mode: bool = Field(
-        default=False,
-        description="Whether to use gpt-4o extract text from documents.",
-    )
-    gpt4o_api_key: Optional[str] = Field(
-        default=None,
-        description="The API key for the GPT-4o API. Lowers the cost of parsing.",
-    )
-    bounding_box: Optional[str] = Field(
-        default=None,
-        description="The bounding box to use to extract text from documents describe as a string containing the bounding box margins",
-    )
-    target_pages: Optional[str] = Field(
-        default=None,
-        description="The target pages to extract text from documents. Describe as a comma separated list of page numbers. The first page of the document is page 0",
-    )
-    ignore_errors: bool = Field(
-        default=True,
-        description="Whether or not to ignore and skip errors raised during parsing.",
-    )
-    split_by_page: bool = Field(
-        default=True,
-        description="Whether to split by page using the page separator",
-    )
-    vendor_multimodal_api_key: Optional[str] = Field(
-        default=None,
-        description="The API key for the multimodal API.",
-    )
-    use_vendor_multimodal_model: bool = Field(
-        default=False,
-        description="Whether to use the vendor multimodal API.",
-    )
-    vendor_multimodal_model_name: Optional[str] = Field(
-        default=None,
-        description="The model name for the vendor multimodal API.",
-    )
-    take_screenshot: bool = Field(
-        default=False,
-        description="Whether to take screenshot of each page of the document.",
-    )
-    custom_client: Optional[httpx.AsyncClient] = Field(
-        default=None, description="A custom HTTPX client to use for sending requests."
-    )
-    disable_ocr: bool = Field(
-        default=False,
-        description="Disable the OCR on the document. LlamaParse will only extract the copyable text from the document.",
-    )
-    is_formatting_instruction: bool = Field(
-        default=True,
-        description="Allow the parsing instruction to also format the output. Disable to have a cleaner markdown output.",
-    )
-    annotate_links: bool = Field(
-        default=False,
-        description="Annotate links found in the document to extract their URL.",
-    )
-    webhook_url: Optional[str] = Field(
-        default=None,
-        description="A URL that needs to be called at the end of the parsing job.",
-    )
-    azure_openai_deployment_name: Optional[str] = Field(
-        default=None, description="Azure Openai Deployment Name"
-    )
-    azure_openai_endpoint: Optional[str] = Field(
-        default=None, description="Azure Openai Endpoint"
-    )
-    azure_openai_api_version: Optional[str] = Field(
-        default=None, description="Azure Openai API Version"
-    )
-    azure_openai_key: Optional[str] = Field(
-        default=None, description="Azure Openai Key"
-    )
-
+   
     @field_validator("api_key", mode="before", check_fields=True)
     @classmethod
     def validate_api_key(cls, v: str) -> str:
@@ -257,58 +234,13 @@ class LlamaParse(BasePydanticReader):
             )
 
         data = {
-            "language": self.language.value,
-            "parsing_instruction": self.parsing_instruction,
-            "invalidate_cache": self.invalidate_cache,
-            "skip_diagonal_text": self.skip_diagonal_text,
-            "do_not_cache": self.do_not_cache,
-            "fast_mode": self.fast_mode,
-            "premium_mode": self.premium_mode,
-            "continuous_mode": self.continuous_mode,
-            "do_not_unroll_columns": self.do_not_unroll_columns,
-            "gpt4o_mode": self.gpt4o_mode,
-            "gpt4o_api_key": self.gpt4o_api_key,
-            "vendor_multimodal_api_key": self.vendor_multimodal_api_key,
-            "use_vendor_multimodal_model": self.use_vendor_multimodal_model,
-            "vendor_multimodal_model_name": self.vendor_multimodal_model_name,
-            "take_screenshot": self.take_screenshot,
-            "disable_ocr": self.disable_ocr,
-            "is_formatting_instruction": self.is_formatting_instruction,
-            "annotate_links": self.annotate_links,
-        }
+        }   
 
-        # only send page separator to server if it is not None
-        # as if a null, "" string is sent the server will then ignore the page separator instead of using the default
-        if self.page_separator is not None:
-            data["page_separator"] = self.page_separator
-
-        if self.page_prefix is not None:
-            data["page_prefix"] = self.page_prefix
-
-        if self.page_suffix is not None:
-            data["page_suffix"] = self.page_suffix
-
-        if self.bounding_box is not None:
-            data["bounding_box"] = self.bounding_box
-
-        if self.target_pages is not None:
-            data["target_pages"] = self.target_pages
-
-        if self.webhook_url is not None:
-            data["webhook_url"] = self.webhook_url
-
-        # Azure OpenAI
-        if self.azure_openai_deployment_name is not None:
-            data["azure_openai_deployment_name"] = self.azure_openai_deployment_name
-
-        if self.azure_openai_endpoint is not None:
-            data["azure_openai_endpoint"] = self.azure_openai_endpoint
-
-        if self.azure_openai_api_version is not None:
-            data["azure_openai_api_version"] = self.azure_openai_api_version
-
-        if self.azure_openai_key is not None:
-            data["azure_openai_key"] = self.azure_openai_key
+        # for each key of LlamaParseParams
+        # if the value is not None, add it to the data
+        for key in LlamaParseParams:
+            if getattr(self, key) is not None:
+                data[key] = getattr(self, key)
 
         try:
             async with self.client_context() as client:
@@ -360,8 +292,7 @@ class LlamaParse(BasePydanticReader):
                     continue
 
                 # Allowed values "PENDING", "SUCCESS", "ERROR", "CANCELED"
-                result_json = result.json()
-                status = result_json["status"]
+                status = result.json()["status"]
                 if status == "SUCCESS":
                     parsed_result = await client.get(result_url, headers=headers)
                     return parsed_result.json()
@@ -373,14 +304,6 @@ class LlamaParse(BasePydanticReader):
                         print(".", end="", flush=True)
 
                     await asyncio.sleep(self.check_interval)
-                else:
-                    error_code = result_json.get("error_code", "No error code found")
-                    error_message = result_json.get(
-                        "error_message", "No error message found"
-                    )
-
-                    exception_str = f"Job ID: {job_id} failed with status: {status}, Error code: {error_code}, Error message: {error_message}"
-                    raise Exception(exception_str)
 
     async def _aload_data(
         self,
@@ -425,7 +348,7 @@ class LlamaParse(BasePydanticReader):
         fs: Optional[AbstractFileSystem] = None,
     ) -> List[Document]:
         """Load data from the input path."""
-        if isinstance(file_path, (str, PurePosixPath, Path, bytes, BufferedIOBase)):
+        if isinstance(file_path, (str, Path, bytes, BufferedIOBase)):
             return await self._aload_data(
                 file_path, extra_info=extra_info, fs=fs, verbose=self.verbose
             )
