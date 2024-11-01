@@ -12,7 +12,7 @@ from io import BufferedIOBase
 
 from fsspec import AbstractFileSystem
 from fsspec.spec import AbstractBufferedFile
-from llama_index.core.async_utils import run_jobs
+from llama_index.core.async_utils import asyncio_run, run_jobs
 from llama_index.core.bridge.pydantic import Field, field_validator
 from llama_index.core.constants import DEFAULT_BASE_URL
 from llama_index.core.readers.base import BasePydanticReader
@@ -473,7 +473,7 @@ class LlamaParse(BasePydanticReader):
     ) -> List[Document]:
         """Load data from the input path."""
         try:
-            return asyncio.run(self.aload_data(file_path, extra_info, fs=fs))
+            return asyncio_run(self.aload_data(file_path, extra_info, fs=fs))
         except RuntimeError as e:
             if nest_asyncio_err in str(e):
                 raise RuntimeError(nest_asyncio_msg)
@@ -540,7 +540,7 @@ class LlamaParse(BasePydanticReader):
     ) -> List[dict]:
         """Parse the input path."""
         try:
-            return asyncio.run(self.aget_json(file_path, extra_info))
+            return asyncio_run(self.aget_json(file_path, extra_info))
         except RuntimeError as e:
             if nest_asyncio_err in str(e):
                 raise RuntimeError(nest_asyncio_msg)
@@ -603,7 +603,7 @@ class LlamaParse(BasePydanticReader):
     def get_images(self, json_result: List[dict], download_path: str) -> List[dict]:
         """Download images from the parsed result."""
         try:
-            return asyncio.run(self.aget_images(json_result, download_path))
+            return asyncio_run(self.aget_images(json_result, download_path))
         except RuntimeError as e:
             if nest_asyncio_err in str(e):
                 raise RuntimeError(nest_asyncio_msg)
@@ -657,7 +657,7 @@ class LlamaParse(BasePydanticReader):
     def get_xlsx(self, json_result: List[dict], download_path: str) -> List[dict]:
         """Download xlsx from the parsed result."""
         try:
-            return asyncio.run(self.aget_xlsx(json_result, download_path))
+            return asyncio_run(self.aget_xlsx(json_result, download_path))
         except RuntimeError as e:
             if nest_asyncio_err in str(e):
                 raise RuntimeError(nest_asyncio_msg)
