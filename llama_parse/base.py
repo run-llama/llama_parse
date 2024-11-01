@@ -35,6 +35,8 @@ _DEFAULT_SEPARATOR = "\n---\n"
 
 
 class LlamaParseParams(BasePydanticReader):
+    """This class contain only the parameter that are used by the LlamaParse API"""
+
     bounding_box: Optional[str] = Field(
         default=None,
         description="The bounding box to use to extract text from documents describe as a string containing the bounding box margins",
@@ -243,6 +245,9 @@ class LlamaParse(LlamaParseParams):
         for key in llama_keys:
             if getattr(self, key) is not None:
                 data[key] = getattr(self, key)
+
+        # To track that the job was created from the Python client and better handle bugs
+        data["from_python_client"] = True
 
         try:
             async with self.client_context() as client:
