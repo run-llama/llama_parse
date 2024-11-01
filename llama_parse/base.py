@@ -39,7 +39,7 @@ class LlamaParseParams(BasePydanticReader):
         default=None,
         description="The bounding box to use to extract text from documents describe as a string containing the bounding box margins",
     )
-   
+
     continuous_mode: Optional[bool] = Field(
         default=False,
         description="If set to true, the parser will to merge together following tables",
@@ -118,11 +118,12 @@ class LlamaParseParams(BasePydanticReader):
         default=None,
         description="The API key for the multimodal API.",
     )
-   
+
     vendor_multimodal_model_name: Optional[str] = Field(
         default=None,
         description="The model name for the vendor multimodal API.",
     )
+
 
 class LlamaParse(LlamaParseParams):
     """A smart-parser for files."""
@@ -163,7 +164,7 @@ class LlamaParse(LlamaParseParams):
     verbose: bool = Field(
         default=True, description="Whether to print the progress of the parsing."
     )
-   
+
     @field_validator("api_key", mode="before", check_fields=True)
     @classmethod
     def validate_api_key(cls, v: str) -> str:
@@ -233,12 +234,13 @@ class LlamaParse(LlamaParseParams):
                 "file_input must be either a file path string, file bytes, or buffer object"
             )
 
-        data = {
-        }   
+        data = {}
 
         # for each key of LlamaParseParams
         # if the value is not None, add it to the data
-        for key in LlamaParseParams:
+        llama_keys = LlamaParseParams.__annotations__.keys()
+
+        for key in llama_keys:
             if getattr(self, key) is not None:
                 data[key] = getattr(self, key)
 
