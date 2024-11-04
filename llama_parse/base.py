@@ -190,6 +190,13 @@ class LlamaParse(BasePydanticReader):
     azure_openai_key: Optional[str] = Field(
         default=None, description="Azure Openai Key"
     )
+    input_url: Optional[str] = Field(
+        default=None, description="An url to a document that need to be parsed"
+    )
+    http_proxy: Optional[str] = Field(
+        default=None,
+        description="(optional) If set with input_url will use the specified http proxy to download the file.",
+    )
 
     @field_validator("api_key", mode="before", check_fields=True)
     @classmethod
@@ -255,6 +262,8 @@ class LlamaParse(BasePydanticReader):
             fs = fs or get_default_fs()
             file_handle = fs.open(file_input, "rb")
             files = {"file": (os.path.basename(file_path), file_handle, mime_type)}
+        elif self.input_url is not None:
+            files = None
         else:
             raise ValueError(
                 "file_input must be either a file path string, file bytes, or buffer object"
@@ -315,6 +324,13 @@ class LlamaParse(BasePydanticReader):
 
         if self.azure_openai_key is not None:
             data["azure_openai_key"] = self.azure_openai_key
+
+        if self.input_url is not None:
+            files = None
+            data["input_url"] = self.input_url
+
+        if self.http_proxy is not None:
+            data["http_proxy"] = self.http_proxy
 
         try:
             async with self.client_context() as client:
