@@ -1,6 +1,6 @@
 import os
 import asyncio
-from io import TextIOWrapper
+from urllib.parse import urlparse
 
 import httpx
 import mimetypes
@@ -11,7 +11,6 @@ from contextlib import asynccontextmanager
 from io import BufferedIOBase
 
 from fsspec import AbstractFileSystem
-from fsspec.spec import AbstractBufferedFile
 from llama_index.core.async_utils import asyncio_run, run_jobs
 from llama_index.core.bridge.pydantic import Field, field_validator
 from llama_index.core.constants import DEFAULT_BASE_URL
@@ -190,9 +189,6 @@ class LlamaParse(BasePydanticReader):
     azure_openai_key: Optional[str] = Field(
         default=None, description="Azure Openai Key"
     )
-    input_url: Optional[str] = Field(
-        default=None, description="An url to a document that need to be parsed"
-    )
     http_proxy: Optional[str] = Field(
         default=None,
         description="(optional) If set with input_url will use the specified http proxy to download the file.",
@@ -228,6 +224,28 @@ class LlamaParse(BasePydanticReader):
             async with httpx.AsyncClient(timeout=self.max_timeout) as client:
                 yield client
 
+    def _is_input_url(self, file_path: FileInput) -> bool:
+        """Check if the input is a valid URL.
+
+        This method checks for:
+        - Proper URL scheme (http/https)
+        - Valid URL structure
+        - Network location (domain)
+        """
+        if not isinstance(file_path, str):
+            return False
+        try:
+            result = urlparse(file_path)
+            return all(
+                [
+                    result.scheme in ("http", "https"),
+                    result.netloc,  # Has domain
+                    result.scheme,  # Has scheme
+                ]
+            )
+        except Exception:
+            return False
+
     # upload a document and get back a job_id
     async def _create_job(
         self,
@@ -239,6 +257,7 @@ class LlamaParse(BasePydanticReader):
         url = f"{self.base_url}/api/parsing/upload"
         files = None
         file_handle = None
+        input_url = file_input if self._is_input_url(file_input) else None
 
         if isinstance(file_input, (bytes, BufferedIOBase)):
             if not extra_info or "file_name" not in extra_info:
@@ -248,6 +267,8 @@ class LlamaParse(BasePydanticReader):
             file_name = extra_info["file_name"]
             mime_type = mimetypes.guess_type(file_name)[0]
             files = {"file": (file_name, file_input, mime_type)}
+        elif input_url is not None:
+            files = None
         elif isinstance(file_input, (str, Path, PurePosixPath, PurePath)):
             file_path = str(file_input)
             file_ext = os.path.splitext(file_path)[1].lower()
@@ -262,8 +283,6 @@ class LlamaParse(BasePydanticReader):
             fs = fs or get_default_fs()
             file_handle = fs.open(file_input, "rb")
             files = {"file": (os.path.basename(file_path), file_handle, mime_type)}
-        elif self.input_url is not None:
-            files = None
         else:
             raise ValueError(
                 "file_input must be either a file path string, file bytes, or buffer object"
@@ -325,9 +344,9 @@ class LlamaParse(BasePydanticReader):
         if self.azure_openai_key is not None:
             data["azure_openai_key"] = self.azure_openai_key
 
-        if self.input_url is not None:
+        if input_url is not None:
             files = None
-            data["input_url"] = self.input_url
+            data["input_url"] = str(input_url)
 
         if self.http_proxy is not None:
             data["http_proxy"] = self.http_proxy
@@ -347,12 +366,6 @@ class LlamaParse(BasePydanticReader):
         finally:
             if file_handle is not None:
                 file_handle.close()
-
-    @staticmethod
-    def __get_filename(f: Union[TextIOWrapper, AbstractBufferedFile]) -> str:
-        if isinstance(f, TextIOWrapper):
-            return f.name
-        return f.full_name
 
     async def _get_job_result(
         self, job_id: str, result_type: str, verbose: bool = False
