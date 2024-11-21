@@ -18,6 +18,7 @@ click = "^8.1.7"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
+pytest-asyncio = "*"
 ipykernel = "^6.29.0"
 
 [tool.poetry.scripts]
