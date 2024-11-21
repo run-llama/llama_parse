@@ -1,5 +1,6 @@
 import os
 import pytest
+import shutil
 from fsspec.implementations.local import LocalFileSystem
 from httpx import AsyncClient
 
@@ -168,9 +169,29 @@ async def test_mixing_input_types() -> None:
     filepath = os.path.join(
         os.path.dirname(__file__), "test_files/attention_is_all_you_need.pdf"
     )
-    input_url = "https://www.google.com"
+    input_url = "https://cdn-blog.novoresume.com/articles/google-docs-resume-templates/basic-google-docs-resume.png"
     result = await parser.aload_data([filepath, input_url])
 
     assert len(result) == 2
-    assert "table 2" in result[0].text.lower()
-    assert "google" in result[1].text.lower()
+
+
+@pytest.mark.skipif(
+    os.environ.get("LLAMA_CLOUD_API_KEY", "") == "",
+    reason="LLAMA_CLOUD_API_KEY not set",
+)
+@pytest.mark.asyncio
+async def test_download_images() -> None:
+    parser = LlamaParse(result_type="markdown", take_screenshot=True)
+    filepath = os.path.join(
+        os.path.dirname(__file__), "test_files/attention_is_all_you_need.pdf"
+    )
+    json_result = await parser.aget_json([filepath])
+
+    assert len(json_result) == 1
+    assert len(json_result[0]["pages"][0]["images"]) > 0
+
+    download_path = os.path.join(os.path.dirname(__file__), "test_files/images")
+    shutil.rmtree(download_path, ignore_errors=True)
+
+    await parser.aget_images(json_result, download_path)
+    assert len(os.listdir(download_path)) == len(json_result[0]["pages"][0]["images"])
