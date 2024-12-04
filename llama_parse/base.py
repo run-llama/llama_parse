@@ -332,14 +332,9 @@ class LlamaParse(BasePydanticReader):
         This method checks for:
         - Proper S3 scheme (s3://)
         """
-        if not isinstance(file_path, str):
-            return False
-        try:
-            if file_path.startswith("s3://"):
-                return True
-            return False
-        except Exception:
-            return False
+        if isinstance(file_path, str):
+            return file_path.startswith("s3://")
+        return False
 
     # upload a document and get back a job_id
     async def _create_job(
@@ -567,9 +562,7 @@ class LlamaParse(BasePydanticReader):
                     data=data,
                 )
                 if not response.is_success:
-                    raise Exception(
-                        f"Failed to parse the file: {response.text} with parameters: {data}"
-                    )
+                    raise Exception(f"Failed to parse the file: {response.text}")
                 job_id = response.json()["id"]
                 return job_id
         finally:
