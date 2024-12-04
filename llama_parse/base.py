@@ -21,7 +21,6 @@ from llama_parse.utils import (
     nest_asyncio_err,
     nest_asyncio_msg,
     ResultType,
-    Language,
     SUPPORTED_FILE_TYPES,
 )
 from copy import deepcopy
@@ -186,8 +185,8 @@ class LlamaParse(BasePydanticReader):
         default=False,
         description="Allow the parsing instruction to also format the output. Disable to have a cleaner markdown output.",
     )
-    language: Language = Field(
-        default=Language.ENGLISH, description="The language of the text to parse."
+    language: Optional[str] = Field(
+        default="en", description="The language of the text to parse."
     )
     max_pages: Optional[int] = Field(
         default=None,
@@ -266,7 +265,7 @@ class LlamaParse(BasePydanticReader):
         default=None,
         description="The bounding box to use to extract text from documents describe as a string containing the bounding box margins",
     )
-    gpt4o_mode: bool = Field(
+    gpt4o_mode: Optional[bool] = Field(
         default=False,
         description="Whether to use gpt-4o extract text from documents.",
     )
@@ -568,7 +567,9 @@ class LlamaParse(BasePydanticReader):
                     data=data,
                 )
                 if not response.is_success:
-                    raise Exception(f"Failed to parse the file: {response.text}")
+                    raise Exception(
+                        f"Failed to parse the file: {response.text} with parameters: {data}"
+                    )
                 job_id = response.json()["id"]
                 return job_id
         finally:
