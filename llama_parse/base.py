@@ -36,7 +36,6 @@ _DEFAULT_SEPARATOR = "\n---\n"
 class LlamaParse(BasePydanticReader):
     """A smart-parser for files."""
 
-    # Library / access specific configurations
     api_key: str = Field(
         default="",
         description="The API key for the LlamaParse API.",
@@ -46,20 +45,8 @@ class LlamaParse(BasePydanticReader):
         default=DEFAULT_BASE_URL,
         description="The base URL of the Llama Parsing API.",
     )
-    check_interval: int = Field(
-        default=1,
-        description="The interval in seconds to check if the parsing is done.",
-    )
-    custom_client: Optional[httpx.AsyncClient] = Field(
-        default=None, description="A custom HTTPX client to use for sending requests."
-    )
-    ignore_errors: bool = Field(
-        default=True,
-        description="Whether or not to ignore and skip errors raised during parsing.",
-    )
-    max_timeout: int = Field(
-        default=2000,
-        description="The maximum timeout in seconds to wait for the parsing to finish.",
+    result_type: ResultType = Field(
+        default=ResultType.TXT, description="The result type for the parser."
     )
     num_workers: int = Field(
         default=4,
@@ -67,204 +54,65 @@ class LlamaParse(BasePydanticReader):
         lt=10,
         description="The number of workers to use sending API requests for parsing.",
     )
-    result_type: ResultType = Field(
-        default=ResultType.TXT, description="The result type for the parser."
+    check_interval: int = Field(
+        default=1,
+        description="The interval in seconds to check if the parsing is done.",
     )
-    show_progress: bool = Field(
-        default=True, description="Show progress when parsing multiple files."
-    )
-    split_by_page: bool = Field(
-        default=True,
-        description="Whether to split by page using the page separator",
+    max_timeout: int = Field(
+        default=2000,
+        description="The maximum timeout in seconds to wait for the parsing to finish.",
     )
     verbose: bool = Field(
         default=True, description="Whether to print the progress of the parsing."
     )
-
-    # Parsing specific configurations (Alphabetical order)
-    annotate_links: Optional[bool] = Field(
-        default=False,
-        description="Annotate links found in the document to extract their URL.",
-    )
-    auto_mode: Optional[bool] = Field(
-        default=False,
-        description="If set to true, the parser will automatically select the best mode to extract text from documents based on the rules provide. Will use the 'accurate' default mode by default and will upgrade page that match the rule to Premium mode.",
-    )
-    auto_mode_trigger_on_image_in_page: Optional[bool] = Field(
-        default=False,
-        description="If auto_mode is set to true, the parser will upgrade the page that contain an image to Premium mode.",
-    )
-    auto_mode_trigger_on_table_in_page: Optional[bool] = Field(
-        default=False,
-        description="If auto_mode is set to true, the parser will upgrade the page that contain a table to Premium mode.",
-    )
-    auto_mode_trigger_on_text_in_page: Optional[str] = Field(
-        default=None,
-        description="If auto_mode is set to true, the parser will upgrade the page that contain the text to Premium mode.",
-    )
-    auto_mode_trigger_on_regexp_in_page: Optional[str] = Field(
-        default=None,
-        description="If auto_mode is set to true, the parser will upgrade the page that match the regexp to Premium mode.",
-    )
-    azure_openai_api_version: Optional[str] = Field(
-        default=None, description="Azure Openai API Version"
-    )
-    azure_openai_deployment_name: Optional[str] = Field(
-        default=None, description="Azure Openai Deployment Name"
-    )
-    azure_openai_endpoint: Optional[str] = Field(
-        default=None, description="Azure Openai Endpoint"
-    )
-    azure_openai_key: Optional[str] = Field(
-        default=None, description="Azure Openai Key"
-    )
-    bbox_bottom: Optional[float] = Field(
-        default=None,
-        description="The bottom margin of the bounding box to use to extract text from documents expressed as a float between 0 and 1 representing the percentage of the page height.",
-    )
-    bbox_left: Optional[float] = Field(
-        default=None,
-        description="The left margin of the bounding box to use to extract text from documents expressed as a float between 0 and 1 representing the percentage of the page width.",
-    )
-    bbox_right: Optional[float] = Field(
-        default=None,
-        description="The right margin of the bounding box to use to extract text from documents expressed as a float between 0 and 1 representing the percentage of the page width.",
-    )
-    bbox_top: Optional[float] = Field(
-        default=None,
-        description="The top margin of the bounding box to use to extract text from documents expressed as a float between 0 and 1 representing the percentage of the page height.",
-    )
-    continuous_mode: Optional[bool] = Field(
-        default=False,
-        description="Parse documents continuously, leading to better results on documents where tables span across two pages.",
-    )
-    disable_ocr: Optional[bool] = Field(
-        default=False,
-        description="Disable the OCR on the document. LlamaParse will only extract the copyable text from the document.",
-    )
-    disable_image_extraction: Optional[bool] = Field(
-        default=False,
-        description="If set to true, the parser will not extract images from the document. Make the parser faster.",
-    )
-    do_not_cache: Optional[bool] = Field(
-        default=False,
-        description="If set to true, the document will not be cached. This mean that you will be re-charged it you reprocess them as they will not be cached.",
-    )
-    do_not_unroll_columns: Optional[bool] = Field(
-        default=False,
-        description="If set to true, the parser will keep column in the text according to document layout. Reduce reconstruction accuracy, and LLM's/embedings performances in most case.",
-    )
-    extract_charts: Optional[bool] = Field(
-        default=False,
-        description="If set to true, the parser will extract/tag charts from the document.",
-    )
-    fast_mode: Optional[bool] = Field(
-        default=False,
-        description="Note: Non compatible with gpt-4o. If set to true, the parser will use a faster mode to extract text from documents. This mode will skip OCR of images, and table/heading reconstruction.",
-    )
-    guess_xlsx_sheet_names: Optional[bool] = Field(
-        default=False,
-        description="Whether to guess the sheet names of the xlsx file.",
-    )
-    html_make_all_elements_visible: Optional[bool] = Field(
-        default=False,
-        description="If set to true, when parsing HTML the parser will consider all elements display not element as display block.",
-    )
-    html_remove_fixed_elements: Optional[bool] = Field(
-        default=False,
-        description="If set to true, when parsing HTML the parser will remove fixed elements. Useful to hide cookie banners.",
-    )
-    http_proxy: Optional[str] = Field(
-        default=None,
-        description="(optional) If set with input_url will use the specified http proxy to download the file.",
-    )
-    invalidate_cache: Optional[bool] = Field(
-        default=False,
-        description="If set to true, the cache will be ignored and the document re-processes. All document are kept in cache for 48hours after the job was completed to avoid processing the same document twice.",
-    )
-    is_formatting_instruction: Optional[bool] = Field(
-        default=False,
-        description="Allow the parsing instruction to also format the output. Disable to have a cleaner markdown output.",
+    show_progress: bool = Field(
+        default=True, description="Show progress when parsing multiple files."
     )
     language: Language = Field(
         default=Language.ENGLISH, description="The language of the text to parse."
     )
-    max_pages: Optional[int] = Field(
-        default=None,
-        description="The maximum number of pages to extract text from documents. If set to 0 or not set, all pages will be that should be extracted will be extracted (can work in combination with targetPages).",
-    )
-    output_pdf_of_document: Optional[bool] = Field(
-        default=False,
-        description="If set to true, the parser will also output a PDF of the document. (except for spreadsheets)",
-    )
-    output_s3_path_prefix: Optional[str] = Field(
-        default=None,
-        description="An S3 path prefix to store the output of the parsing job. If set, the parser will upload the output to S3. The bucket need to be accessible from the LlamaIndex organization.",
-    )
-    page_prefix: Optional[str] = Field(
-        default=None,
-        description="A templated prefix to add to the beginning of each page. If it contain `{page_number}`, it will be replaced by the page number.",
-    )
-    page_separator: Optional[str] = Field(
-        default=None,
-        description="A templated  page separator to use to split the text.  If it contain `{page_number}`,it will be replaced by the next page number. If not set will the default separator '\\n---\\n' will be used.",
-    )
-    page_suffix: Optional[str] = Field(
-        default=None,
-        description="A templated suffix to add to the beginning of each page. If it contain `{page_number}`, it will be replaced by the page number.",
-    )
     parsing_instruction: Optional[str] = Field(
         default="", description="The parsing instruction for the parser."
-    )
-    premium_mode: Optional[bool] = Field(
-        default=False,
-        description="Use our best parser mode if set to True.",
     )
     skip_diagonal_text: Optional[bool] = Field(
         default=False,
         description="If set to true, the parser will ignore diagonal text (when the text rotation in degrees modulo 90 is not 0).",
     )
-    structured_output: Optional[bool] = Field(
+    invalidate_cache: Optional[bool] = Field(
         default=False,
-        description="If set to true, the parser will output structured data based on the provided JSON Schema.",
+        description="If set to true, the cache will be ignored and the document re-processes. All document are kept in cache for 48hours after the job was completed to avoid processing the same document twice.",
     )
-    structured_output_json_schema: Optional[str] = Field(
-        default=None,
-        description="A JSON Schema to use to structure the output of the parsing job. If set, the parser will output structured data based on the provided JSON Schema.",
-    )
-    structured_output_json_schema_name: Optional[str] = Field(
-        default=None,
-        description="The named JSON Schema to use to structure the output of the parsing job. For convenience / testing, LlamaParse provides a few named JSON Schema that can be used directly. Use 'imFeelingLucky' to let llamaParse dream the schema.",
-    )
-    take_screenshot: Optional[bool] = Field(
+    do_not_cache: Optional[bool] = Field(
         default=False,
-        description="Whether to take screenshot of each page of the document.",
+        description="If set to true, the document will not be cached. This mean that you will be re-charged it you reprocess them as they will not be cached.",
     )
-    target_pages: Optional[str] = Field(
-        default=None,
-        description="The target pages to extract text from documents. Describe as a comma separated list of page numbers. The first page of the document is page 0",
-    )
-    use_vendor_multimodal_model: Optional[bool] = Field(
+    fast_mode: Optional[bool] = Field(
         default=False,
-        description="Whether to use the vendor multimodal API.",
+        description="Note: Non compatible with gpt-4o. If set to true, the parser will use a faster mode to extract text from documents. This mode will skip OCR of images, and table/heading reconstruction.",
     )
-    vendor_multimodal_api_key: Optional[str] = Field(
-        default=None,
-        description="The API key for the multimodal API.",
+    premium_mode: bool = Field(
+        default=False,
+        description="Use our best parser mode if set to True.",
     )
-    vendor_multimodal_model_name: Optional[str] = Field(
-        default=None,
-        description="The model name for the vendor multimodal API.",
+    continuous_mode: bool = Field(
+        default=False,
+        description="Parse documents continuously, leading to better results on documents where tables span across two pages.",
     )
-    webhook_url: Optional[str] = Field(
-        default=None,
-        description="A URL that needs to be called at the end of the parsing job.",
+    do_not_unroll_columns: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the parser will keep column in the text according to document layout. Reduce reconstruction accuracy, and LLM's/embedings performances in most case.",
     )
-
-    # Deprecated
-    bounding_box: Optional[str] = Field(
+    page_separator: Optional[str] = Field(
         default=None,
-        description="The bounding box to use to extract text from documents describe as a string containing the bounding box margins",
+        description="A templated  page separator to use to split the text.  If it contain `{page_number}`,it will be replaced by the next page number. If not set will the default separator '\\n---\\n' will be used.",
+    )
+    page_prefix: Optional[str] = Field(
+        default=None,
+        description="A templated prefix to add to the beginning of each page. If it contain `{page_number}`, it will be replaced by the page number.",
+    )
+    page_suffix: Optional[str] = Field(
+        default=None,
+        description="A templated suffix to add to the beginning of each page. If it contain `{page_number}`, it will be replaced by the page number.",
     )
     gpt4o_mode: bool = Field(
         default=False,
@@ -273,6 +121,77 @@ class LlamaParse(BasePydanticReader):
     gpt4o_api_key: Optional[str] = Field(
         default=None,
         description="The API key for the GPT-4o API. Lowers the cost of parsing.",
+    )
+    guess_xlsx_sheet_names: Optional[bool] = Field(
+        default=False,
+        description="Whether to guess the sheet names of the xlsx file.",
+    )
+    bounding_box: Optional[str] = Field(
+        default=None,
+        description="The bounding box to use to extract text from documents describe as a string containing the bounding box margins",
+    )
+    target_pages: Optional[str] = Field(
+        default=None,
+        description="The target pages to extract text from documents. Describe as a comma separated list of page numbers. The first page of the document is page 0",
+    )
+    ignore_errors: bool = Field(
+        default=True,
+        description="Whether or not to ignore and skip errors raised during parsing.",
+    )
+    split_by_page: bool = Field(
+        default=True,
+        description="Whether to split by page using the page separator",
+    )
+    vendor_multimodal_api_key: Optional[str] = Field(
+        default=None,
+        description="The API key for the multimodal API.",
+    )
+    use_vendor_multimodal_model: bool = Field(
+        default=False,
+        description="Whether to use the vendor multimodal API.",
+    )
+    vendor_multimodal_model_name: Optional[str] = Field(
+        default=None,
+        description="The model name for the vendor multimodal API.",
+    )
+    take_screenshot: bool = Field(
+        default=False,
+        description="Whether to take screenshot of each page of the document.",
+    )
+    custom_client: Optional[httpx.AsyncClient] = Field(
+        default=None, description="A custom HTTPX client to use for sending requests."
+    )
+    disable_ocr: bool = Field(
+        default=False,
+        description="Disable the OCR on the document. LlamaParse will only extract the copyable text from the document.",
+    )
+    is_formatting_instruction: bool = Field(
+        default=True,
+        description="Allow the parsing instruction to also format the output. Disable to have a cleaner markdown output.",
+    )
+    annotate_links: bool = Field(
+        default=False,
+        description="Annotate links found in the document to extract their URL.",
+    )
+    webhook_url: Optional[str] = Field(
+        default=None,
+        description="A URL that needs to be called at the end of the parsing job.",
+    )
+    azure_openai_deployment_name: Optional[str] = Field(
+        default=None, description="Azure Openai Deployment Name"
+    )
+    azure_openai_endpoint: Optional[str] = Field(
+        default=None, description="Azure Openai Endpoint"
+    )
+    azure_openai_api_version: Optional[str] = Field(
+        default=None, description="Azure Openai API Version"
+    )
+    azure_openai_key: Optional[str] = Field(
+        default=None, description="Azure Openai Key"
+    )
+    http_proxy: Optional[str] = Field(
+        default=None,
+        description="(optional) If set with input_url will use the specified http proxy to download the file.",
     )
 
     @field_validator("api_key", mode="before", check_fields=True)
@@ -327,21 +246,6 @@ class LlamaParse(BasePydanticReader):
         except Exception:
             return False
 
-    def _is_s3_url(self, file_path: FileInput) -> bool:
-        """Check if the input is a valid URL.
-
-        This method checks for:
-        - Proper S3 scheme (s3://)
-        """
-        if not isinstance(file_path, str):
-            return False
-        try:
-            if file_path.startswith("s3://"):
-                return True
-            return False
-        except Exception:
-            return False
-
     # upload a document and get back a job_id
     async def _create_job(
         self,
@@ -354,7 +258,6 @@ class LlamaParse(BasePydanticReader):
         files = None
         file_handle = None
         input_url = file_input if self._is_input_url(file_input) else None
-        input_s3_path = file_input if self._is_s3_url(file_input) else None
 
         if isinstance(file_input, (bytes, BufferedIOBase)):
             if not extra_info or "file_name" not in extra_info:
@@ -365,8 +268,6 @@ class LlamaParse(BasePydanticReader):
             mime_type = mimetypes.guess_type(file_name)[0]
             files = {"file": (file_name, file_input, mime_type)}
         elif input_url is not None:
-            files = None
-        elif input_s3_path is not None:
             files = None
         elif isinstance(file_input, (str, Path, PurePosixPath, PurePath)):
             file_path = str(file_input)
@@ -387,177 +288,68 @@ class LlamaParse(BasePydanticReader):
                 "file_input must be either a file path string, file bytes, or buffer object"
             )
 
-        data: Dict[str, Any] = {}
-
-        data["from_python_package"] = True
-
-        if self.annotate_links:
-            data["annotate_links"] = self.annotate_links
-
-        if self.auto_mode:
-            data["auto_mode"] = self.auto_mode
-
-        if self.auto_mode_trigger_on_image_in_page:
-            data[
-                "auto_mode_trigger_on_image_in_page"
-            ] = self.auto_mode_trigger_on_image_in_page
-
-        if self.auto_mode_trigger_on_table_in_page:
-            data[
-                "auto_mode_trigger_on_table_in_page"
-            ] = self.auto_mode_trigger_on_table_in_page
-
-        if self.auto_mode_trigger_on_text_in_page is not None:
-            data[
-                "auto_mode_trigger_on_text_in_page"
-            ] = self.auto_mode_trigger_on_text_in_page
-
-        if self.auto_mode_trigger_on_regexp_in_page is not None:
-            data[
-                "auto_mode_trigger_on_regexp_in_page"
-            ] = self.auto_mode_trigger_on_regexp_in_page
-
-        if self.azure_openai_api_version is not None:
-            data["azure_openai_api_version"] = self.azure_openai_api_version
-
-        if self.azure_openai_deployment_name is not None:
-            data["azure_openai_deployment_name"] = self.azure_openai_deployment_name
-
-        if self.azure_openai_endpoint is not None:
-            data["azure_openai_endpoint"] = self.azure_openai_endpoint
-
-        if self.azure_openai_key is not None:
-            data["azure_openai_key"] = self.azure_openai_key
-
-        if self.bbox_bottom is not None:
-            data["bbox_bottom"] = self.bbox_bottom
-
-        if self.bbox_left is not None:
-            data["bbox_left"] = self.bbox_left
-
-        if self.bbox_right is not None:
-            data["bbox_right"] = self.bbox_right
-
-        if self.bbox_top is not None:
-            data["bbox_top"] = self.bbox_top
-
-        if self.continuous_mode:
-            data["continuous_mode"] = self.continuous_mode
-
-        if self.disable_ocr:
-            data["disable_ocr"] = self.disable_ocr
-
-        if self.disable_image_extraction:
-            data["disable_image_extraction"] = self.disable_image_extraction
-
-        if self.do_not_cache:
-            data["do_not_cache"] = self.do_not_cache
-
-        if self.do_not_unroll_columns:
-            data["do_not_unroll_columns"] = self.do_not_unroll_columns
-
-        if self.extract_charts:
-            data["extract_charts"] = self.extract_charts
-
-        if self.fast_mode:
-            data["fast_mode"] = self.fast_mode
-
-        if self.guess_xlsx_sheet_names:
-            data["guess_xlsx_sheet_names"] = self.guess_xlsx_sheet_names
-
-        if self.html_make_all_elements_visible:
-            data["html_make_all_elements_visible"] = self.html_make_all_elements_visible
-
-        if self.html_remove_fixed_elements:
-            data["html_remove_fixed_elements"] = self.html_remove_fixed_elements
-
-        if self.http_proxy is not None:
-            data["http_proxy"] = self.http_proxy
-
-        if input_url is not None:
-            files = None
-            data["input_url"] = str(input_url)
-
-        if input_s3_path is not None:
-            files = None
-            data["input_s3_path"] = str(input_s3_path)
-
-        if self.invalidate_cache:
-            data["invalidate_cache"] = self.invalidate_cache
-
-        if self.is_formatting_instruction:
-            data["is_formatting_instruction"] = self.is_formatting_instruction
-
-        if self.language:
-            data["language"] = self.language
-
-        if self.max_pages is not None:
-            data["max_pages"] = self.max_pages
-
-        if self.output_pdf_of_document:
-            data["output_pdf_of_document"] = self.output_pdf_of_document
-
-        if self.output_s3_path_prefix is not None:
-            data["output_s3_path_prefix"] = self.output_s3_path_prefix
-
-        if self.page_prefix is not None:
-            data["page_prefix"] = self.page_prefix
+        data = {
+            "language": self.language.value,
+            "parsing_instruction": self.parsing_instruction,
+            "invalidate_cache": self.invalidate_cache,
+            "skip_diagonal_text": self.skip_diagonal_text,
+            "do_not_cache": self.do_not_cache,
+            "fast_mode": self.fast_mode,
+            "premium_mode": self.premium_mode,
+            "continuous_mode": self.continuous_mode,
+            "do_not_unroll_columns": self.do_not_unroll_columns,
+            "gpt4o_mode": self.gpt4o_mode,
+            "gpt4o_api_key": self.gpt4o_api_key,
+            "vendor_multimodal_api_key": self.vendor_multimodal_api_key,
+            "use_vendor_multimodal_model": self.use_vendor_multimodal_model,
+            "vendor_multimodal_model_name": self.vendor_multimodal_model_name,
+            "take_screenshot": self.take_screenshot,
+            "disable_ocr": self.disable_ocr,
+            "guess_xlsx_sheet_names": self.guess_xlsx_sheet_names,
+            "is_formatting_instruction": self.is_formatting_instruction,
+            "annotate_links": self.annotate_links,
+            "from_python_package": True,
+        }
 
         # only send page separator to server if it is not None
         # as if a null, "" string is sent the server will then ignore the page separator instead of using the default
         if self.page_separator is not None:
             data["page_separator"] = self.page_separator
 
+        if self.page_prefix is not None:
+            data["page_prefix"] = self.page_prefix
+
         if self.page_suffix is not None:
             data["page_suffix"] = self.page_suffix
 
-        if self.parsing_instruction is not None:
-            data["parsing_instruction"] = self.parsing_instruction
-
-        if self.premium_mode:
-            data["premium_mode"] = self.premium_mode
-
-        if self.skip_diagonal_text:
-            data["skip_diagonal_text"] = self.skip_diagonal_text
-
-        if self.structured_output:
-            data["structured_output"] = self.structured_output
-
-        if self.structured_output_json_schema is not None:
-            data["structured_output_json_schema"] = self.structured_output_json_schema
-
-        if self.structured_output_json_schema_name is not None:
-            data[
-                "structured_output_json_schema_name"
-            ] = self.structured_output_json_schema_name
-
-        if self.take_screenshot:
-            data["take_screenshot"] = self.take_screenshot
+        if self.bounding_box is not None:
+            data["bounding_box"] = self.bounding_box
 
         if self.target_pages is not None:
             data["target_pages"] = self.target_pages
 
-        if self.use_vendor_multimodal_model:
-            data["use_vendor_multimodal_model"] = self.use_vendor_multimodal_model
-
-        if self.vendor_multimodal_api_key is not None:
-            data["vendor_multimodal_api_key"] = self.vendor_multimodal_api_key
-
-        if self.vendor_multimodal_model_name is not None:
-            data["vendor_multimodal_model_name"] = self.vendor_multimodal_model_name
-
         if self.webhook_url is not None:
             data["webhook_url"] = self.webhook_url
 
-        # Deprecated
-        if self.bounding_box is not None:
-            data["bounding_box"] = self.bounding_box
+        # Azure OpenAI
+        if self.azure_openai_deployment_name is not None:
+            data["azure_openai_deployment_name"] = self.azure_openai_deployment_name
 
-        if self.gpt4o_mode:
-            data["gpt4o_mode"] = self.gpt4o_mode
+        if self.azure_openai_endpoint is not None:
+            data["azure_openai_endpoint"] = self.azure_openai_endpoint
 
-        if self.gpt4o_api_key is not None:
-            data["gpt4o_api_key"] = self.gpt4o_api_key
+        if self.azure_openai_api_version is not None:
+            data["azure_openai_api_version"] = self.azure_openai_api_version
+
+        if self.azure_openai_key is not None:
+            data["azure_openai_key"] = self.azure_openai_key
+
+        if input_url is not None:
+            files = None
+            data["input_url"] = str(input_url)
+
+        if self.http_proxy is not None:
+            data["http_proxy"] = self.http_proxy
 
         try:
             async with self.client_context() as client:
