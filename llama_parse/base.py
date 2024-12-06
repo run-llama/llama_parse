@@ -173,6 +173,10 @@ class LlamaParse(BasePydanticReader):
         default=False,
         description="If set to true, when parsing HTML the parser will remove fixed elements. Useful to hide cookie banners.",
     )
+    html_remove_navigation_elements: Optional[bool] = Field(
+        default=False,
+        description="If set to true, when parsing HTML the parser will remove navigation elements. Useful to hide menus, header, footer.",
+    )
     http_proxy: Optional[str] = Field(
         default=None,
         description="(optional) If set with input_url will use the specified http proxy to download the file.",
@@ -464,6 +468,11 @@ class LlamaParse(BasePydanticReader):
 
         if self.html_remove_fixed_elements:
             data["html_remove_fixed_elements"] = self.html_remove_fixed_elements
+
+        if self.html_remove_navigation_elements:
+            data[
+                "html_remove_navigation_elements"
+            ] = self.html_remove_navigation_elements
 
         if self.http_proxy is not None:
             data["http_proxy"] = self.http_proxy
