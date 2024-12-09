@@ -787,54 +787,82 @@ class LlamaParse(BasePydanticReader):
             else:
                 raise e
 
-    async def aget_images(
-        self, json_result: List[dict], download_path: str
+    async def aget_assets(
+        self, json_result: List[dict], download_path: str, asset_key: str
     ) -> List[dict]:
-        """Download images from the parsed result."""
+        """Download assets (images or charts) from the parsed result."""
         headers = {"Authorization": f"Bearer {self.api_key}"}
 
-        # make the download path
+        # Make the download path
         if not os.path.exists(download_path):
             os.makedirs(download_path)
 
         try:
-            images = []
+            assets = []
             for result in json_result:
                 job_id = result["job_id"]
                 for page in result["pages"]:
                     if self.verbose:
-                        print(f"> Image for page {page['page']}: {page['images']}")
-                    for image in page["images"]:
-                        image_name = image["name"]
+                        print(
+                            f"> {asset_key.capitalize()} for page {page['page']}: {page[asset_key]}"
+                        )
+                    for asset in page[asset_key]:
+                        asset_name = asset["name"]
 
-                        # get the full path
-                        image_path = os.path.join(
-                            download_path, f"{job_id}-{image_name}"
+                        # Get the full path
+                        asset_path = os.path.join(
+                            download_path, f"{job_id}-{asset_name}"
                         )
 
-                        # get a valid image path
-                        if not image_path.endswith(".png"):
-                            if not image_path.endswith(".jpg"):
-                                image_path += ".png"
+                        # Get a valid asset path
+                        if not asset_path.endswith(".png"):
+                            if not asset_path.endswith(".jpg"):
+                                asset_path += ".png"
 
-                        image["path"] = image_path
-                        image["job_id"] = job_id
+                        asset["path"] = asset_path
+                        asset["job_id"] = job_id
 
-                        image["original_file_path"] = result.get("file_path", None)
+                        asset["original_file_path"] = result.get("file_path", None)
 
-                        image["page_number"] = page["page"]
-                        with open(image_path, "wb") as f:
-                            image_url = f"{self.base_url}/api/parsing/job/{job_id}/result/image/{image_name}"
+                        asset["page_number"] = page["page"]
+                        with open(asset_path, "wb") as f:
+                            asset_url = f"{self.base_url}/api/parsing/job/{job_id}/result/image/{asset_name}"
                             async with self.client_context() as client:
                                 res = await client.get(
-                                    image_url, headers=headers, timeout=self.max_timeout
+                                    asset_url, headers=headers, timeout=self.max_timeout
                                 )
                                 res.raise_for_status()
                                 f.write(res.content)
-                        images.append(image)
-            return images
+                        assets.append(asset)
+            return assets
         except Exception as e:
-            print("Error while downloading images from the parsed result:", e)
+            print(f"Error while downloading {asset_key} from the parsed result:", e)
+            if self.ignore_errors:
+                return []
+            else:
+                raise e
+
+    async def aget_images(
+        self, json_result: List[dict], download_path: str
+    ) -> List[dict]:
+        """Download images from the parsed result."""
+        try:
+            return await self.aget_assets(json_result, download_path, "images")
+        except Exception as e:
+            print("Error while downloading images:", e)
+            if self.ignore_errors:
+                return []
+            else:
+                raise e
+
+    async def aget_charts(
+        self, json_result: List[dict], download_path: str
+    ) -> List[dict]:
+        """Download charts from the parsed result."""
+        try:
+            return await self.aget_assets(json_result, download_path, "charts")
+        except Exception as e:
+            print("Error while downloading charts:", e)
             if self.ignore_errors:
                 return []
             else:
@@ -847,59 +875,6 @@ class LlamaParse(BasePydanticReader):
         except RuntimeError as e:
             if nest_asyncio_err in str(e):
                 raise RuntimeError(nest_asyncio_msg)
-            else:
-                raise e
-
-    async def aget_charts(
-        self, json_result: List[dict], download_path: str
-    ) -> List[dict]:
-        """Download charts from the parsed result."""
-        headers = {"Authorization": f"Bearer {self.api_key}"}
-
-        # Make the download path
-        if not os.path.exists(download_path):
-            os.makedirs(download_path)
-
-        try:
-            charts = []
-            for result in json_result:
-                job_id = result["job_id"]
-                for page in result["pages"]:
-                    if self.verbose:
-                        print(f"> Chart for page {page['page']}: {page['charts']}")
-                    for chart in page["charts"]:
-                        chart_name = chart["name"]
-
-                        # Get the full path
-                        chart_path = os.path.join(
-                            download_path, f"{job_id}-{chart_name}"
-                        )
-
-                        # Get a valid chart path
-                        if not chart_path.endswith(".png"):
-                            if not chart_path.endswith(".jpg"):
-                                chart_path += ".png"
-
-                        chart["path"] = chart_path
-                        chart["job_id"] = job_id
-
-                        chart["original_file_path"] = result.get("file_path", None)
-
-                        chart["page_number"] = page["page"]
-                        with open(chart_path, "wb") as f:
-                            chart_url = f"{self.base_url}/api/parsing/job/{job_id}/result/image/{chart_name}"
-                            async with self.client_context() as client:
-                                res = await client.get(
-                                    chart_url, headers=headers, timeout=self.max_timeout
-                                )
-                                res.raise_for_status()
-                                f.write(res.content)
-                        charts.append(chart)
-            return charts
-        except Exception as e:
-            print("Error while downloading charts from the parsed result:", e)
-            if self.ignore_errors:
-                return []
             else:
                 raise e
 
