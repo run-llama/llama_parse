@@ -850,6 +850,69 @@ class LlamaParse(BasePydanticReader):
             else:
                 raise e
 
+    async def aget_charts(
+        self, json_result: List[dict], download_path: str
+    ) -> List[dict]:
+        """Download charts from the parsed result."""
+        headers = {"Authorization": f"Bearer {self.api_key}"}
+
+        # Make the download path
+        if not os.path.exists(download_path):
+            os.makedirs(download_path)
+
+        try:
+            charts = []
+            for result in json_result:
+                job_id = result["job_id"]
+                for page in result["pages"]:
+                    if self.verbose:
+                        print(f"> Chart for page {page['page']}: {page['charts']}")
+                    for chart in page["charts"]:
+                        chart_name = chart["name"]
+
+                        # Get the full path
+                        chart_path = os.path.join(
+                            download_path, f"{job_id}-{chart_name}"
+                        )
+
+                        # Get a valid chart path
+                        if not chart_path.endswith(".png"):
+                            if not chart_path.endswith(".jpg"):
+                                chart_path += ".png"
+
+                        chart["path"] = chart_path
+                        chart["job_id"] = job_id
+
+                        chart["original_file_path"] = result.get("file_path", None)
+
+                        chart["page_number"] = page["page"]
+                        with open(chart_path, "wb") as f:
+                            chart_url = f"{self.base_url}/api/parsing/job/{job_id}/result/image/{chart_name}"
+                            async with self.client_context() as client:
+                                res = await client.get(
+                                    chart_url, headers=headers, timeout=self.max_timeout
+                                )
+                                res.raise_for_status()
+                                f.write(res.content)
+                        charts.append(chart)
+            return charts
+        except Exception as e:
+            print("Error while downloading charts from the parsed result:", e)
+            if self.ignore_errors:
+                return []
+            else:
+                raise e
+
+    def get_charts(self, json_result: List[dict], download_path: str) -> List[dict]:
+        """Download charts from the parsed result."""
+        try:
+            return asyncio_run(self.aget_charts(json_result, download_path))
+        except RuntimeError as e:
+            if nest_asyncio_err in str(e):
+                raise RuntimeError(nest_asyncio_msg)
+            else:
+                raise e
+
     async def aget_xlsx(
         self, json_result: List[dict], download_path: str
     ) -> List[dict]:
