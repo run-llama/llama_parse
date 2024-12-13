@@ -891,7 +891,7 @@ class LlamaParse(BasePydanticReader):
     async def aget_xlsx(
         self, json_result: List[dict], download_path: str
     ) -> List[dict]:
-        """Download images from the parsed result."""
+        """Download xlsx from the parsed result."""
         headers = {"Authorization": f"Bearer {self.api_key}"}
 
         # make the download path
