@@ -157,6 +157,10 @@ class LlamaParse(BasePydanticReader):
         default=False,
         description="If set to true, the parser will extract/tag charts from the document.",
     )
+    extract_layout: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the parser will extract the layout information of the document. Cost 1 credit per page.",
+    )
     fast_mode: Optional[bool] = Field(
         default=False,
         description="Note: Non compatible with gpt-4o. If set to true, the parser will use a faster mode to extract text from documents. This mode will skip OCR of images, and table/heading reconstruction.",
@@ -456,6 +460,9 @@ class LlamaParse(BasePydanticReader):
 
         if self.extract_charts:
             data["extract_charts"] = self.extract_charts
+
+        if self.extract_layout:
+            data["extract_layout"] = self.extract_layout
 
         if self.fast_mode:
             data["fast_mode"] = self.fast_mode

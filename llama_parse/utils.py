@@ -191,4 +191,11 @@ SUPPORTED_FILE_TYPES = [
     ".xlr",
     ".eth",
     ".tsv",
+    ".mp3",
+    ".mp4",
+    ".mpeg",
+    ".mpga",
+    ".m4a",
+    ".wav",
+    ".webm",
 ]
