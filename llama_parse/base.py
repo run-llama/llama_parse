@@ -1,29 +1,29 @@
-import os
 import asyncio
+import mimetypes
+import os
+import time
+from contextlib import asynccontextmanager
+from copy import deepcopy
+from io import BufferedIOBase
+from pathlib import Path, PurePath, PurePosixPath
+from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 from urllib.parse import urlparse
 
 import httpx
-import mimetypes
-import time
-from pathlib import Path, PurePath, PurePosixPath
-from typing import AsyncGenerator, Any, Dict, List, Optional, Union
-from contextlib import asynccontextmanager
-from io import BufferedIOBase
-
 from fsspec import AbstractFileSystem
 from llama_index.core.async_utils import asyncio_run, run_jobs
-from llama_index.core.bridge.pydantic import Field, field_validator
+from llama_index.core.bridge.pydantic import Field, PrivateAttr, field_validator
 from llama_index.core.constants import DEFAULT_BASE_URL
 from llama_index.core.readers.base import BasePydanticReader
 from llama_index.core.readers.file.base import get_default_fs
 from llama_index.core.schema import Document
+
 from llama_parse.utils import (
+    SUPPORTED_FILE_TYPES,
+    ResultType,
     nest_asyncio_err,
     nest_asyncio_msg,
-    ResultType,
-    SUPPORTED_FILE_TYPES,
 )
-from copy import deepcopy
 
 # can put in a path to the file or the file bytes itself
 # if passing as bytes or a buffer, must provide the file_name in extra_info
@@ -302,6 +302,25 @@ class LlamaParse(BasePydanticReader):
         """Validate the base URL."""
         url = os.getenv("LLAMA_CLOUD_BASE_URL", None)
         return url or v or DEFAULT_BASE_URL
+
+    _aclient: Union[httpx.AsyncClient, None] = PrivateAttr(default=None, init=False)
+
+    @property
+    def aclient(self) -> httpx.AsyncClient:
+        if not self._aclient:
+            client = self.custom_client or httpx.AsyncClient()
+
+        # need to do this outside instantiation in case user
+        # updates base_url, api_key, or max_timeout later
+        # ... you wouldn't usually expect that, except
+        # if someone does do it and it doesn't reflect on
+        # the client they'll end up pretty confused, so
+        # for the sake of ergonomics...
+        client.base_url = self.base_url
+        client.headers["Authorization"] = f"Bearer {self.api_key}"
+        client.timeout = self.max_timeout
+
+        return client
 
     @asynccontextmanager
     async def client_context(self) -> AsyncGenerator[httpx.AsyncClient, None]:
