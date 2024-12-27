@@ -1,35 +1,40 @@
-import os
 import asyncio
+import mimetypes
+import os
+import time
+from contextlib import asynccontextmanager
+from copy import deepcopy
+from io import BufferedIOBase
+from pathlib import Path, PurePath, PurePosixPath
+from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 from urllib.parse import urlparse
 
 import httpx
-import mimetypes
-import time
-from pathlib import Path, PurePath, PurePosixPath
-from typing import AsyncGenerator, Any, Dict, List, Optional, Union
-from contextlib import asynccontextmanager
-from io import BufferedIOBase
-
 from fsspec import AbstractFileSystem
 from llama_index.core.async_utils import asyncio_run, run_jobs
-from llama_index.core.bridge.pydantic import Field, field_validator
+from llama_index.core.bridge.pydantic import Field, PrivateAttr, field_validator
 from llama_index.core.constants import DEFAULT_BASE_URL
 from llama_index.core.readers.base import BasePydanticReader
 from llama_index.core.readers.file.base import get_default_fs
 from llama_index.core.schema import Document
+
 from llama_parse.utils import (
+    SUPPORTED_FILE_TYPES,
+    ResultType,
     nest_asyncio_err,
     nest_asyncio_msg,
-    ResultType,
-    SUPPORTED_FILE_TYPES,
 )
-from copy import deepcopy
 
 # can put in a path to the file or the file bytes itself
 # if passing as bytes or a buffer, must provide the file_name in extra_info
 FileInput = Union[str, bytes, BufferedIOBase]
 
 _DEFAULT_SEPARATOR = "\n---\n"
+
+
+JOB_RESULT_URL = "/api/parsing/job/{job_id}/result/{result_type}"
+JOB_STATUS_ROUTE = "/api/parsing/job/{job_id}"
+JOB_UPLOAD_ROUTE = "/api/parsing/upload"
 
 
 class LlamaParse(BasePydanticReader):
@@ -49,9 +54,11 @@ class LlamaParse(BasePydanticReader):
         default=1,
         description="The interval in seconds to check if the parsing is done.",
     )
+
     custom_client: Optional[httpx.AsyncClient] = Field(
         default=None, description="A custom HTTPX client to use for sending requests."
     )
+
     ignore_errors: bool = Field(
         default=True,
         description="Whether or not to ignore and skip errors raised during parsing.",
@@ -303,6 +310,25 @@ class LlamaParse(BasePydanticReader):
         url = os.getenv("LLAMA_CLOUD_BASE_URL", None)
         return url or v or DEFAULT_BASE_URL
 
+    _aclient: Union[httpx.AsyncClient, None] = PrivateAttr(default=None, init=False)
+
+    @property
+    def aclient(self) -> httpx.AsyncClient:
+        if not self._aclient:
+            self._aclient = self.custom_client or httpx.AsyncClient()
+
+        # need to do this outside instantiation in case user
+        # updates base_url, api_key, or max_timeout later
+        # ... you wouldn't usually expect that, except
+        # if someone does do it and it doesn't reflect on
+        # the client they'll end up pretty confused, so
+        # for the sake of ergonomics...
+        self._aclient.base_url = self.base_url
+        self._aclient.headers["Authorization"] = f"Bearer {self.api_key}"
+        self._aclient.timeout = self.max_timeout
+
+        return self._aclient
+
     @asynccontextmanager
     async def client_context(self) -> AsyncGenerator[httpx.AsyncClient, None]:
         """Create a context for the HTTPX client."""
@@ -351,8 +377,6 @@ class LlamaParse(BasePydanticReader):
         extra_info: Optional[dict] = None,
         fs: Optional[AbstractFileSystem] = None,
     ) -> str:
-        headers = {"Authorization": f"Bearer {self.api_key}"}
-        url = f"{self.base_url}/api/parsing/upload"
         files = None
         file_handle = None
         input_url = file_input if self._is_input_url(file_input) else None
@@ -570,17 +594,12 @@ class LlamaParse(BasePydanticReader):
             data["gpt4o_api_key"] = self.gpt4o_api_key
 
         try:
-            async with self.client_context() as client:
-                response = await client.post(
-                    url,
-                    files=files,
-                    headers=headers,
-                    data=data,
-                )
-                if not response.is_success:
-                    raise Exception(f"Failed to parse the file: {response.text}")
-                job_id = response.json()["id"]
-                return job_id
+            resp = await self.aclient.post(JOB_UPLOAD_ROUTE, files=files, data=data)  # type: ignore
+            resp.raise_for_status()  # this raises if status is not 2xx
+            return resp.json()["id"]
+        except httpx.HTTPStatusError as err:  # this catches it
+            msg = f"Failed to parse the file: {err.response.text}"
+            raise Exception(msg) from err  # this preserves the exception context
         finally:
             if file_handle is not None:
                 file_handle.close()
@@ -588,52 +607,51 @@ class LlamaParse(BasePydanticReader):
     async def _get_job_result(
         self, job_id: str, result_type: str, verbose: bool = False
     ) -> Dict[str, Any]:
-        result_url = f"{self.base_url}/api/parsing/job/{job_id}/result/{result_type}"
-        status_url = f"{self.base_url}/api/parsing/job/{job_id}"
-        headers = {"Authorization": f"Bearer {self.api_key}"}
-
         start = time.time()
         tries = 0
+
+        # so we're not re-setting the headers & stuff on each
+        # usage... assume that there is not some other
+        # coro also modifying base_url and the other client related configs.
+        client = self.aclient
         while True:
             await asyncio.sleep(self.check_interval)
-            async with self.client_context() as client:
-                tries += 1
+            tries += 1
+            result = await client.get(JOB_STATUS_ROUTE.format(job_id=job_id))
+            if result.status_code != 200:
+                end = time.time()
+                if end - start > self.max_timeout:
+                    raise Exception(f"Timeout while parsing the file: {job_id}")
+                if verbose and tries % 10 == 0:
+                    print(".", end="", flush=True)
+                await asyncio.sleep(self.check_interval)
+                continue
 
-                result = await client.get(status_url, headers=headers)
+            # Allowed values "PENDING", "SUCCESS", "ERROR", "CANCELED"
+            result_json = result.json()
+            status = result_json["status"]
+            if status == "SUCCESS":
+                parsed_result = await client.get(
+                    JOB_RESULT_URL.format(job_id=job_id, result_type=result_type),
+                )
+                return parsed_result.json()
 
-                if result.status_code != 200:
-                    end = time.time()
-                    if end - start > self.max_timeout:
-                        raise Exception(f"Timeout while parsing the file: {job_id}")
-                    if verbose and tries % 10 == 0:
-                        print(".", end="", flush=True)
+            elif status == "PENDING":
+                end = time.time()
+                if end - start > self.max_timeout:
+                    raise Exception(f"Timeout while parsing the file: {job_id}")
+                if verbose and tries % 10 == 0:
+                    print(".", end="", flush=True)
+                await asyncio.sleep(self.check_interval)
 
-                    await asyncio.sleep(self.check_interval)
+            else:
+                error_code = result_json.get("error_code", "No error code found")
+                error_message = result_json.get(
+                    "error_message", "No error message found"
+                )
 
-                    continue
-
-                # Allowed values "PENDING", "SUCCESS", "ERROR", "CANCELED"
-                result_json = result.json()
-                status = result_json["status"]
-                if status == "SUCCESS":
-                    parsed_result = await client.get(result_url, headers=headers)
-                    return parsed_result.json()
-                elif status == "PENDING":
-                    end = time.time()
-                    if end - start > self.max_timeout:
-                        raise Exception(f"Timeout while parsing the file: {job_id}")
-                    if verbose and tries % 10 == 0:
-                        print(".", end="", flush=True)
-
-                    await asyncio.sleep(self.check_interval)
-                else:
-                    error_code = result_json.get("error_code", "No error code found")
-                    error_message = result_json.get(
-                        "error_message", "No error message found"
-                    )
-
-                    exception_str = f"Job ID: {job_id} failed with status: {status}, Error code: {error_code}, Error message: {error_message}"
-                    raise Exception(exception_str)
+                exception_str = f"Job ID: {job_id} failed with status: {status}, Error code: {error_code}, Error message: {error_message}"
+                raise Exception(exception_str)
 
     async def _aload_data(
         self,
@@ -798,12 +816,11 @@ class LlamaParse(BasePydanticReader):
         self, json_result: List[dict], download_path: str, asset_key: str
     ) -> List[dict]:
         """Download assets (images or charts) from the parsed result."""
-        headers = {"Authorization": f"Bearer {self.api_key}"}
-
         # Make the download path
         if not os.path.exists(download_path):
             os.makedirs(download_path)
 
+        client = self.aclient
         try:
             assets = []
             for result in json_result:
@@ -828,18 +845,14 @@ class LlamaParse(BasePydanticReader):
 
                         asset["path"] = asset_path
                         asset["job_id"] = job_id
-
                         asset["original_file_path"] = result.get("file_path", None)
-
                         asset["page_number"] = page["page"]
+
                         with open(asset_path, "wb") as f:
                             asset_url = f"{self.base_url}/api/parsing/job/{job_id}/result/image/{asset_name}"
-                            async with self.client_context() as client:
-                                res = await client.get(
-                                    asset_url, headers=headers, timeout=self.max_timeout
-                                )
-                                res.raise_for_status()
-                                f.write(res.content)
+                            resp = await client.get(asset_url)
+                            resp.raise_for_status()
+                            f.write(resp.content)
                         assets.append(asset)
             return assets
         except Exception as e:
@@ -899,11 +912,10 @@ class LlamaParse(BasePydanticReader):
         self, json_result: List[dict], download_path: str
     ) -> List[dict]:
         """Download xlsx from the parsed result."""
-        headers = {"Authorization": f"Bearer {self.api_key}"}
-
         # make the download path
         if not os.path.exists(download_path):
             os.makedirs(download_path)
+        client = self.aclient
         try:
             xlsx_list = []
             for result in json_result:
@@ -923,12 +935,9 @@ class LlamaParse(BasePydanticReader):
                     xlsx_url = (
                         f"{self.base_url}/api/parsing/job/{job_id}/result/raw/xlsx"
                     )
-                    async with self.client_context() as client:
-                        res = await client.get(
-                            xlsx_url, headers=headers, timeout=self.max_timeout
-                        )
-                        res.raise_for_status()
-                        f.write(res.content)
+                    res = await client.get(xlsx_url)
+                    res.raise_for_status()
+                    f.write(res.content)
                 xlsx_list.append(xlsx)
             return xlsx_list
 
