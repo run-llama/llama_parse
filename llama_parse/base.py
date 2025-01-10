@@ -140,6 +140,14 @@ class LlamaParse(BasePydanticReader):
         default=None,
         description="The top margin of the bounding box to use to extract text from documents expressed as a float between 0 and 1 representing the percentage of the page height.",
     )
+    complemental_formatting_instruction: Optional[str] = Field(
+        default=None,
+        description="The complemental formatting instruction for the parser. Tell llamaParse how some thing should to be formatted, while retaining the markdown output.",
+    )
+    content_guideline_instruction: Optional[str] = Field(
+        default=None,
+        description="The content guideline for the parser. Tell LlamaParse how the content should be changed / transformed.",
+    )
     continuous_mode: Optional[bool] = Field(
         default=False,
         description="Parse documents continuously, leading to better results on documents where tables span across two pages.",
@@ -172,6 +180,10 @@ class LlamaParse(BasePydanticReader):
         default=False,
         description="Note: Non compatible with gpt-4o. If set to true, the parser will use a faster mode to extract text from documents. This mode will skip OCR of images, and table/heading reconstruction.",
     )
+    formatting_instruction: Optional[str] = Field(
+        default=None,
+        description="The Formatting instruction for the parser. Override default llamaParse behavior. In most case you want to use complemental_formatting_instruction instead.",
+    )
     guess_xlsx_sheet_names: Optional[bool] = Field(
         default=False,
         description="Whether to guess the sheet names of the xlsx file.",
@@ -195,10 +207,6 @@ class LlamaParse(BasePydanticReader):
     invalidate_cache: Optional[bool] = Field(
         default=False,
         description="If set to true, the cache will be ignored and the document re-processes. All document are kept in cache for 48hours after the job was completed to avoid processing the same document twice.",
-    )
-    is_formatting_instruction: Optional[bool] = Field(
-        default=False,
-        description="Allow the parsing instruction to also format the output. Disable to have a cleaner markdown output.",
     )
     language: Optional[str] = Field(
         default="en", description="The language of the text to parse."
@@ -226,9 +234,6 @@ class LlamaParse(BasePydanticReader):
     page_suffix: Optional[str] = Field(
         default=None,
         description="A templated suffix to add to the beginning of each page. If it contain `{page_number}`, it will be replaced by the page number.",
-    )
-    parsing_instruction: Optional[str] = Field(
-        default="", description="The parsing instruction for the parser."
     )
     premium_mode: Optional[bool] = Field(
         default=False,
@@ -287,6 +292,13 @@ class LlamaParse(BasePydanticReader):
     gpt4o_api_key: Optional[str] = Field(
         default=None,
         description="The API key for the GPT-4o API. Lowers the cost of parsing.",
+    )
+    is_formatting_instruction: Optional[bool] = Field(
+        default=False,
+        description="Allow the parsing instruction to also format the output. Disable to have a cleaner markdown output.",
+    )
+    parsing_instruction: Optional[str] = Field(
+        default="", description="The parsing instruction for the parser."
     )
 
     @field_validator("api_key", mode="before", check_fields=True)
@@ -467,6 +479,14 @@ class LlamaParse(BasePydanticReader):
         if self.bbox_top is not None:
             data["bbox_top"] = self.bbox_top
 
+        if self.complemental_formatting_instruction:
+            data[
+                "complemental_formatting_instruction"
+            ] = self.complemental_formatting_instruction
+
+        if self.content_guideline_instruction:
+            data["content_guideline_instruction"] = self.content_guideline_instruction
+
         if self.continuous_mode:
             data["continuous_mode"] = self.continuous_mode
 
@@ -490,6 +510,9 @@ class LlamaParse(BasePydanticReader):
 
         if self.fast_mode:
             data["fast_mode"] = self.fast_mode
+
+        if self.formatting_instruction:
+            data["formatting_instruction"] = self.formatting_instruction
 
         if self.guess_xlsx_sheet_names:
             data["guess_xlsx_sheet_names"] = self.guess_xlsx_sheet_names
