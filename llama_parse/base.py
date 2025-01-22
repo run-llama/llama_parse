@@ -140,6 +140,14 @@ class LlamaParse(BasePydanticReader):
         default=None,
         description="The top margin of the bounding box to use to extract text from documents expressed as a float between 0 and 1 representing the percentage of the page height.",
     )
+    complemental_formatting_instruction: Optional[str] = Field(
+        default=None,
+        description="The complemental formatting instruction for the parser. Tell llamaParse how some thing should to be formatted, while retaining the markdown output.",
+    )
+    content_guideline_instruction: Optional[str] = Field(
+        default=None,
+        description="The content guideline for the parser. Tell LlamaParse how the content should be changed / transformed.",
+    )
     continuous_mode: Optional[bool] = Field(
         default=False,
         description="Parse documents continuously, leading to better results on documents where tables span across two pages.",
@@ -172,6 +180,10 @@ class LlamaParse(BasePydanticReader):
         default=False,
         description="Note: Non compatible with gpt-4o. If set to true, the parser will use a faster mode to extract text from documents. This mode will skip OCR of images, and table/heading reconstruction.",
     )
+    formatting_instruction: Optional[str] = Field(
+        default=None,
+        description="The Formatting instruction for the parser. Override default llamaParse behavior. In most case you want to use complemental_formatting_instruction instead.",
+    )
     guess_xlsx_sheet_names: Optional[bool] = Field(
         default=False,
         description="Whether to guess the sheet names of the xlsx file.",
@@ -192,13 +204,25 @@ class LlamaParse(BasePydanticReader):
         default=None,
         description="(optional) If set with input_url will use the specified http proxy to download the file.",
     )
+    ignore_document_elements_for_layout_detection: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the parser will ignore document elements for layout detection and only rely on a vision model.",
+    )
+    input_s3_region: Optional[str] = Field(
+        default=None,
+        description="The region of the input S3 bucket if input_s3_path is specified.",
+    )
     invalidate_cache: Optional[bool] = Field(
         default=False,
         description="If set to true, the cache will be ignored and the document re-processes. All document are kept in cache for 48hours after the job was completed to avoid processing the same document twice.",
     )
-    is_formatting_instruction: Optional[bool] = Field(
-        default=False,
-        description="Allow the parsing instruction to also format the output. Disable to have a cleaner markdown output.",
+    job_timeout_extra_time_per_page_in_seconds: Optional[float] = Field(
+        default=None,
+        description="The extra time in seconds to wait for the parsing to finish per page. Get added to job_timeout_in_seconds.",
+    )
+    job_timeout_in_seconds: Optional[float] = Field(
+        default=None,
+        description="The maximum timeout in seconds to wait for the parsing to finish. Override default timeout of 30 minutes. Minimum is 120 seconds.",
     )
     language: Optional[str] = Field(
         default="en", description="The language of the text to parse."
@@ -215,6 +239,14 @@ class LlamaParse(BasePydanticReader):
         default=None,
         description="An S3 path prefix to store the output of the parsing job. If set, the parser will upload the output to S3. The bucket need to be accessible from the LlamaIndex organization.",
     )
+    output_s3_region: Optional[str] = Field(
+        default=None,
+        description="The AWS region of the output S3 bucket defined in output_s3_path_prefix.",
+    )
+    output_tables_as_HTML: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the parser will output tables as HTML in the markdown.",
+    )
     page_prefix: Optional[str] = Field(
         default=None,
         description="A templated prefix to add to the beginning of each page. If it contain `{page_number}`, it will be replaced by the page number.",
@@ -227,9 +259,6 @@ class LlamaParse(BasePydanticReader):
         default=None,
         description="A templated suffix to add to the beginning of each page. If it contain `{page_number}`, it will be replaced by the page number.",
     )
-    parsing_instruction: Optional[str] = Field(
-        default="", description="The parsing instruction for the parser."
-    )
     premium_mode: Optional[bool] = Field(
         default=False,
         description="Use our best parser mode if set to True.",
@@ -238,6 +267,31 @@ class LlamaParse(BasePydanticReader):
         default=False,
         description="If set to true, the parser will ignore diagonal text (when the text rotation in degrees modulo 90 is not 0).",
     )
+    spreadsheet_extract_sub_tables: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the parser will extract sub-tables from the spreadsheet when possible (more than one table per sheet).",
+    )
+
+    strict_mode_buggy_font: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the parser will fail if it can't extract text from a document because of a buggy font.",
+    )
+
+    strict_mode_image_extraction: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the parser will fail if it can't extract an image from the document.",
+    )
+
+    strict_mode_image_ocr: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the parser will fail if it can't OCR an image from the document.",
+    )
+
+    strict_mode_reconstruction: Optional[bool] = Field(
+        default=False,
+        description="If set to true, the parser will fail if it can't reconstruct a table or a heading from the document.",
+    )
+
     structured_output: Optional[bool] = Field(
         default=False,
         description="If set to true, the parser will output structured data based on the provided JSON Schema.",
@@ -287,6 +341,13 @@ class LlamaParse(BasePydanticReader):
     gpt4o_api_key: Optional[str] = Field(
         default=None,
         description="The API key for the GPT-4o API. Lowers the cost of parsing.",
+    )
+    is_formatting_instruction: Optional[bool] = Field(
+        default=False,
+        description="Allow the parsing instruction to also format the output. Disable to have a cleaner markdown output.",
+    )
+    parsing_instruction: Optional[str] = Field(
+        default="", description="The parsing instruction for the parser."
     )
 
     @field_validator("api_key", mode="before", check_fields=True)
@@ -467,6 +528,14 @@ class LlamaParse(BasePydanticReader):
         if self.bbox_top is not None:
             data["bbox_top"] = self.bbox_top
 
+        if self.complemental_formatting_instruction:
+            data[
+                "complemental_formatting_instruction"
+            ] = self.complemental_formatting_instruction
+
+        if self.content_guideline_instruction:
+            data["content_guideline_instruction"] = self.content_guideline_instruction
+
         if self.continuous_mode:
             data["continuous_mode"] = self.continuous_mode
 
@@ -491,6 +560,9 @@ class LlamaParse(BasePydanticReader):
         if self.fast_mode:
             data["fast_mode"] = self.fast_mode
 
+        if self.formatting_instruction:
+            data["formatting_instruction"] = self.formatting_instruction
+
         if self.guess_xlsx_sheet_names:
             data["guess_xlsx_sheet_names"] = self.guess_xlsx_sheet_names
 
@@ -508,6 +580,11 @@ class LlamaParse(BasePydanticReader):
         if self.http_proxy is not None:
             data["http_proxy"] = self.http_proxy
 
+        if self.ignore_document_elements_for_layout_detection:
+            data[
+                "ignore_document_elements_for_layout_detection"
+            ] = self.ignore_document_elements_for_layout_detection
+
         if input_url is not None:
             files = None
             data["input_url"] = str(input_url)
@@ -516,11 +593,22 @@ class LlamaParse(BasePydanticReader):
             files = None
             data["input_s3_path"] = str(input_s3_path)
 
+        if self.input_s3_region is not None:
+            data["input_s3_region"] = self.input_s3_region
+
         if self.invalidate_cache:
             data["invalidate_cache"] = self.invalidate_cache
 
         if self.is_formatting_instruction:
             data["is_formatting_instruction"] = self.is_formatting_instruction
+
+        if self.job_timeout_extra_time_per_page_in_seconds is not None:
+            data[
+                "job_timeout_extra_time_per_page_in_seconds"
+            ] = self.job_timeout_extra_time_per_page_in_seconds
+
+        if self.job_timeout_in_seconds is not None:
+            data["job_timeout_in_seconds"] = self.job_timeout_in_seconds
 
         if self.language:
             data["language"] = self.language
@@ -534,6 +622,12 @@ class LlamaParse(BasePydanticReader):
         if self.output_s3_path_prefix is not None:
             data["output_s3_path_prefix"] = self.output_s3_path_prefix
 
+        if self.output_s3_region is not None:
+            data["output_s3_region"] = self.output_s3_region
+
+        if self.output_tables_as_HTML:
+            data["output_tables_as_HTML"] = self.output_tables_as_HTML
+
         if self.page_prefix is not None:
             data["page_prefix"] = self.page_prefix
 
@@ -546,6 +640,9 @@ class LlamaParse(BasePydanticReader):
             data["page_suffix"] = self.page_suffix
 
         if self.parsing_instruction is not None:
+            print(
+                "WARNING: parsing_instruction is deprecated. Use complemental_formatting_instruction or content_guideline_instruction instead."
+            )
             data["parsing_instruction"] = self.parsing_instruction
 
         if self.premium_mode:
@@ -553,6 +650,21 @@ class LlamaParse(BasePydanticReader):
 
         if self.skip_diagonal_text:
             data["skip_diagonal_text"] = self.skip_diagonal_text
+
+        if self.spreadsheet_extract_sub_tables:
+            data["spreadsheet_extract_sub_tables"] = self.spreadsheet_extract_sub_tables
+
+        if self.strict_mode_buggy_font:
+            data["strict_mode_buggy_font"] = self.strict_mode_buggy_font
+
+        if self.strict_mode_image_extraction:
+            data["strict_mode_image_extraction"] = self.strict_mode_image_extraction
+
+        if self.strict_mode_image_ocr:
+            data["strict_mode_image_ocr"] = self.strict_mode_image_ocr
+
+        if self.strict_mode_reconstruction:
+            data["strict_mode_reconstruction"] = self.strict_mode_reconstruction
 
         if self.structured_output:
             data["structured_output"] = self.structured_output
