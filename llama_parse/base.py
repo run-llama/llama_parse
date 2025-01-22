@@ -208,6 +208,10 @@ class LlamaParse(BasePydanticReader):
         default=False,
         description="If set to true, the parser will ignore document elements for layout detection and only rely on a vision model.",
     )
+    input_s3_region: Optional[str] = Field(
+        default=None,
+        description="The region of the input S3 bucket if input_s3_path is specified.",
+    )
     invalidate_cache: Optional[bool] = Field(
         default=False,
         description="If set to true, the cache will be ignored and the document re-processes. All document are kept in cache for 48hours after the job was completed to avoid processing the same document twice.",
@@ -234,6 +238,10 @@ class LlamaParse(BasePydanticReader):
     output_s3_path_prefix: Optional[str] = Field(
         default=None,
         description="An S3 path prefix to store the output of the parsing job. If set, the parser will upload the output to S3. The bucket need to be accessible from the LlamaIndex organization.",
+    )
+    output_s3_region: Optional[str] = Field(
+        default=None,
+        description="The AWS region of the output S3 bucket defined in output_s3_path_prefix.",
     )
     output_tables_as_HTML: Optional[bool] = Field(
         default=False,
@@ -585,6 +593,9 @@ class LlamaParse(BasePydanticReader):
             files = None
             data["input_s3_path"] = str(input_s3_path)
 
+        if self.input_s3_region is not None:
+            data["input_s3_region"] = self.input_s3_region
+
         if self.invalidate_cache:
             data["invalidate_cache"] = self.invalidate_cache
 
@@ -610,6 +621,9 @@ class LlamaParse(BasePydanticReader):
 
         if self.output_s3_path_prefix is not None:
             data["output_s3_path_prefix"] = self.output_s3_path_prefix
+
+        if self.output_s3_region is not None:
+            data["output_s3_region"] = self.output_s3_region
 
         if self.output_tables_as_HTML:
             data["output_tables_as_HTML"] = self.output_tables_as_HTML
