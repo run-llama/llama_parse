@@ -153,10 +153,10 @@ async def test_input_url() -> None:
 @pytest.mark.asyncio
 async def test_input_url_with_website_input() -> None:
     parser = LlamaParse(result_type="markdown")
-    input_url = "https://www.google.com"
+    input_url = "https://www.example.com"
     result = await parser.aload_data(input_url)
     assert len(result) == 1
-    assert "google" in result[0].text.lower()
+    assert "example" in result[0].text.lower()
 
 
 @pytest.mark.skipif(
