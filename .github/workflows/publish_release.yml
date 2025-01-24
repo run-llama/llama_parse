@@ -31,10 +31,10 @@ jobs:
         shell: bash
         run: pip install -e .
       - name: Build and publish to pypi
-        uses: JRubics/poetry-publish@v1.17
+        uses: JRubics/poetry-publish@v2.1
         with:
           pypi_token: ${{ secrets.LLAMA_PARSE_PYPI_TOKEN }}
-          ignore_dev_requirements: "yes"
+          poetry_install_options: "--without dev"
 
       - name: Create GitHub Release
         id: create_release
