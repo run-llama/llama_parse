@@ -9,7 +9,7 @@ import json
 import uuid
 from llama_cloud.types import ExtractConfig, ExtractMode
 from deepdiff import DeepDiff
-from tests.util import json_subset_match_score
+from tests.extract.util import json_subset_match_score
 
 load_dotenv(Path(__file__).parent.parent / ".env.dev", override=True)
 
