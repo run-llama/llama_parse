@@ -23,16 +23,31 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
           version: ${{ env.POETRY_VERSION }}
+
       - name: Install deps
         shell: bash
         run: pip install -e .
-      - name: Build and publish to pypi
+
+      - name: Build and publish llama-cloud-services
         uses: JRubics/poetry-publish@v2.1
         with:
+          poetry_version: ${{ env.POETRY_VERSION }}
+          python_version: ${{ env.PYTHON_VERSION }}
+          working_directory: "llama_cloud_services"
+          pypi_token: ${{ secrets.LLAMA_PARSE_PYPI_TOKEN }}
+          poetry_install_options: "--without dev"
+
+      - name: Build and publish llama-parse
+        uses: JRubics/poetry-publish@v2.1
+        with:
+          poetry_version: ${{ env.POETRY_VERSION }}
+          python_version: ${{ env.PYTHON_VERSION }}
+          working_directory: "llama_parse"
           pypi_token: ${{ secrets.LLAMA_PARSE_PYPI_TOKEN }}
           poetry_install_options: "--without dev"
 
@@ -52,6 +67,7 @@ jobs:
           export PKG=$(ls dist/ | grep tar)
           set -- $PKG
           echo "name=$1" >> $GITHUB_ENV
+
       - name: Upload Release Asset (sdist) to GitHub
         id: upload-release-asset
         uses: actions/upload-release-asset@v1

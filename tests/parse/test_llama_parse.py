@@ -4,7 +4,7 @@ import shutil
 from fsspec.implementations.local import LocalFileSystem
 from httpx import AsyncClient
 
-from llama_parse import LlamaParse
+from llama_cloud_services.parse import LlamaParse
 
 
 @pytest.mark.skipif(

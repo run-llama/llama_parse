@@ -5,7 +5,7 @@ from pathlib import Path
 from pydantic.fields import FieldInfo
 from typing import Any, Callable, List
 
-from llama_parse.base import LlamaParse
+from llama_cloud_services.parse.base import LlamaParse
 
 
 def pydantic_field_to_click_option(name: str, field: FieldInfo) -> click.Option:

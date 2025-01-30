@@ -18,7 +18,7 @@ from llama_index.core.readers.base import BasePydanticReader
 from llama_index.core.readers.file.base import get_default_fs
 from llama_index.core.schema import Document
 
-from llama_parse.utils import (
+from llama_cloud_services.parse.utils import (
     SUPPORTED_FILE_TYPES,
     ResultType,
     nest_asyncio_err,
