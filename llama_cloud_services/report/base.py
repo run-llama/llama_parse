@@ -17,12 +17,12 @@ class LlamaReport:
 
     def __init__(
         self,
-        api_key: str | None = None,
-        project_id: str | None = None,
-        organization_id: str | None = None,
-        base_url: str | None = None,
-        timeout: int | None = None,
-        async_httpx_client: httpx.AsyncClient | None = None,
+        api_key: Optional[str] = None,
+        project_id: Optional[str] = None,
+        organization_id: Optional[str] = None,
+        base_url: Optional[str] = None,
+        timeout: Optional[int] = None,
+        async_httpx_client: Optional[httpx.AsyncClient] = None,
     ):
         self.api_key = api_key or os.getenv("LLAMA_CLOUD_API_KEY", None)
         if not self.api_key:
