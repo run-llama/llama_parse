@@ -1,7 +1,7 @@
 import asyncio
 import httpx
 import time
-from typing import Optional, List, Literal, TYPE_CHECKING
+from typing import Optional, List, Literal, Union, TYPE_CHECKING
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -69,7 +69,7 @@ class ReportClient:
     def __repr__(self) -> str:
         return f"Report(id={self.report_id}, name={self.name})"
 
-    def _get_block_content(self, block: ReportBlock | ReportPlanBlock) -> str:
+    def _get_block_content(self, block: Union[ReportBlock, ReportPlanBlock]) -> str:
         if isinstance(block, ReportBlock):
             return block.template
         elif isinstance(block, ReportPlanBlock):
@@ -77,7 +77,7 @@ class ReportClient:
         else:
             raise ValueError(f"Invalid block type: {type(block)}")
 
-    def _get_block_idx(self, block: ReportBlock | ReportPlanBlock) -> int:
+    def _get_block_idx(self, block: Union[ReportBlock, ReportPlanBlock]) -> int:
         if isinstance(block, ReportBlock):
             return block.idx
         elif isinstance(block, ReportPlanBlock):
