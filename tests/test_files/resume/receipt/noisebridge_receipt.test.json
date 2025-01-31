@@ -1,0 +1,37 @@
+{
+  "receiptNumber": "27215058",
+  "invoiceNumber": "87B37C90152",
+  "datePaid": "2024-07-19",
+  "paymentMethod": {
+    "type": "visa",
+    "lastFourDigits": "7267"
+  },
+  "merchant": {
+    "name": "Noisebridge",
+    "address": {
+      "street": "272 Capp St",
+      "city": "San Francisco",
+      "state": "California",
+      "postalCode": "94110",
+      "country": "United States"
+    },
+    "phone": "1 6507017829",
+    "email": "treasurer+stripe@noisebridge.net"
+  },
+  "billTo": "noisebridge@seldo.com",
+  "items": [
+    {
+      "description": "$10 / month",
+      "quantity": 1,
+      "unitPrice": 10.0,
+      "amount": 10.0,
+      "period": {
+        "start": "2024-07-19",
+        "end": "2024-08-19"
+      }
+    }
+  ],
+  "subtotal": 10.0,
+  "total": 10.0,
+  "amountPaid": 10.0
+}

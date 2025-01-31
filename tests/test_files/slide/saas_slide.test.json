@@ -1,0 +1,48 @@
+{
+  "companyInfo": {
+    "name": "CloudFlow Analytics",
+    "fundingStage": "Series A",
+    "foundedYear": null,
+    "industry": null,
+    "location": null
+  },
+  "financialMetrics": {
+    "mrr": {
+      "value": 580000,
+      "currency": "USD",
+      "growthRate": 27
+    },
+    "grossMargin": 88
+  },
+  "growthMetrics": {
+    "customers": {
+      "total": 1247,
+      "growth": 142,
+      "enterprisePercent": null
+    },
+    "nrr": 147
+  },
+  "marketMetrics": {
+    "tam": 50000000000,
+    "sam": null,
+    "marketShare": null,
+    "competitors": null
+  },
+  "differentiators": [
+    {
+      "claim": "Processing Speed",
+      "metric": "5x faster",
+      "comparisonTarget": "competitors"
+    },
+    {
+      "claim": "ML Accuracy",
+      "metric": "99.9%",
+      "comparisonTarget": null
+    },
+    {
+      "claim": "Market Potential",
+      "metric": "80%",
+      "comparisonTarget": "Fortune 500"
+    }
+  ]
+}

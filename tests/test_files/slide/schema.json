@@ -1,0 +1,122 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["companyInfo", "financialMetrics", "growthMetrics"],
+  "properties": {
+    "companyInfo": {
+      "type": "object",
+      "required": ["name", "fundingStage"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "fundingStage": {
+          "type": "string",
+          "enum": ["Pre-seed", "Seed", "Series A", "Series B", "Series C+"]
+        },
+        "foundedYear": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "industry": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "location": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "financialMetrics": {
+      "type": "object",
+      "required": ["mrr", "growthRate"],
+      "properties": {
+        "mrr": {
+          "type": "object",
+          "description": "Monthly Recurring Revenue",
+          "required": ["value", "currency", "growthRate"],
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "currency": {
+              "type": "string"
+            },
+            "growthRate": {
+              "type": "number"
+            }
+          }
+        },
+        "grossMargin": {
+          "type": "number"
+        }
+      }
+    },
+    "growthMetrics": {
+      "type": "object",
+      "required": ["customers", "nrr"],
+      "properties": {
+        "customers": {
+          "type": "object",
+          "required": ["total", "growth"],
+          "properties": {
+            "total": {
+              "type": "integer"
+            },
+            "growth": {
+              "type": "number"
+            }
+          }
+        },
+        "nrr": {
+          "description": "Net Revenue Retention",
+          "type": "number"
+        }
+      }
+    },
+    "differentiators": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["claim", "metric"],
+        "properties": {
+          "claim": {
+            "type": "string"
+          },
+          "metric": {
+            "type": "string"
+          },
+          "comparisonTarget": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

@@ -18,7 +18,7 @@ from llama_cloud.types import (
 load_dotenv(Path(__file__).parent.parent / ".env.dev", override=True)
 
 
-TEST_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+TEST_DIR = os.path.join("tests/test_files")
 # Get configuration from environment
 LLAMA_CLOUD_API_KEY = os.getenv("LLAMA_CLOUD_API_KEY")
 LLAMA_CLOUD_BASE_URL = os.getenv("LLAMA_CLOUD_BASE_URL")

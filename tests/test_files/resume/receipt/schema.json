@@ -1,0 +1,124 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["receiptNumber", "datePaid", "total", "items"],
+  "properties": {
+    "receiptNumber": {
+      "type": "string"
+    },
+    "invoiceNumber": {
+      "type": "string"
+    },
+    "datePaid": {
+      "type": "string",
+      "format": "date"
+    },
+    "paymentMethod": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["visa", "mastercard", "amex", "cash", "other"]
+        },
+        "lastFourDigits": {
+          "type": "string",
+          "pattern": "^[0-9]{4}$"
+        }
+      }
+    },
+    "merchant": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "address": {
+          "type": "object",
+          "properties": {
+            "street": {
+              "type": "string"
+            },
+            "city": {
+              "type": "string"
+            },
+            "state": {
+              "type": "string"
+            },
+            "postalCode": {
+              "type": "string"
+            },
+            "country": {
+              "type": "string"
+            }
+          }
+        },
+        "phone": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        }
+      }
+    },
+    "billTo": {
+      "type": "string",
+      "format": "email"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "description",
+          "quantity",
+          "unitPrice",
+          "amount",
+          "period"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "unitPrice": {
+            "type": "number",
+            "minimum": 0
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0
+          },
+          "period": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "format": "date"
+              },
+              "end": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          }
+        }
+      }
+    },
+    "subtotal": {
+      "type": "number",
+      "minimum": 0
+    },
+    "total": {
+      "type": "number",
+      "minimum": 0
+    },
+    "amountPaid": {
+      "type": "number",
+      "minimum": 0
+    }
+  }
+}
