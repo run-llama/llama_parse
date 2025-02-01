@@ -276,17 +276,23 @@ class ReportClient:
         Args:
             suggestion: The EditSuggestion to accept, typically from suggest_edits()
         """
+        if len(suggestion.blocks) == 0:
+            return
+
         # Get current report content
-        report = await self.aget()
+        report_response = await self.aget()
 
         # Track the edit
+        new_report = None
         for edit_block in suggestion.blocks:
             old_content = self._get_block_content(
                 next(
-                    b for b in report.blocks if b.idx == self._get_block_idx(edit_block)
+                    b
+                    for b in report_response.report.blocks
+                    if b.idx == self._get_block_idx(edit_block)
                 )
             )
-            new_content = self._get_block_content(edit_block.block)
+            new_content = self._get_block_content(edit_block)
             self.edit_history.append(
                 EditAction(
                     block_idx=self._get_block_idx(edit_block),
@@ -298,16 +304,25 @@ class ReportClient:
             )
 
             # Update the specific block
-            for block in report.blocks:
+            new_report_blocks = [block for block in report_response.report.blocks]
+            for i, block in enumerate(new_report_blocks):
                 if block.idx == self._get_block_idx(edit_block):
-                    block.template = new_content
+                    new_report_blocks[i] = ReportBlock(
+                        idx=block.idx, template=new_content, sources=block.sources
+                    )
                     break
 
+            new_report = Report(
+                blocks=new_report_blocks,
+                id=report_response.report_id,
+            )
+
         # Update the report
-        url = await self._build_url(f"/api/v1/reports/{self.report_id}")
-        await self.aclient.patch(
-            url, headers=self._headers, json={"content": report.model_dump()}
-        )
+        if new_report:
+            url = await self._build_url(f"/api/v1/reports/{self.report_id}")
+            await self.aclient.patch(
+                url, headers=self._headers, json={"content": new_report.dict()}
+            )
 
     def accept_edit(self, suggestion: EditSuggestion) -> None:
         """Synchronous wrapper for accepting an edit."""

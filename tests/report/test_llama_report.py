@@ -21,13 +21,14 @@ async def client() -> AsyncGenerator[LlamaReport, None]:
         yield client
     finally:
         # clean up reports
-        reports_after = await client.alist_reports()
-        reports_after_ids = [r.report_id for r in reports_after]
-        for report_id in reports_before_ids:
-            if report_id not in reports_after_ids:
-                await client.adelete_report(report_id)
-
-        await client.aclient.aclose()
+        try:
+            reports_after = await client.alist_reports()
+            reports_after_ids = [r.report_id for r in reports_after]
+            for report_id in reports_before_ids:
+                if report_id not in reports_after_ids:
+                    await client.adelete_report(report_id)
+        finally:
+            await client.aclient.aclose()
 
 
 @pytest.fixture(scope="function")
@@ -92,15 +93,6 @@ async def test_report_plan_workflow(report: ReportClient) -> None:
     completed_report = await report.await_completion()
     assert len(completed_report.blocks) > 0
 
-
-@pytest.mark.asyncio
-async def test_report_edit_suggestions(report: ReportClient) -> None:
-    """Test getting and handling edit suggestions."""
-
-    # Wait for the report to be ready
-    completed_report = await report.await_completion()
-    assert len(completed_report.blocks) > 0
-
     # Get edit suggestions
     suggestions = await report.asuggest_edits(
         "Make the text more formal.", auto_history=True
@@ -119,3 +111,7 @@ async def test_report_edit_suggestions(report: ReportClient) -> None:
 
     # Verify chat history is maintained
     assert len(report.chat_history) >= 4  # 2 user messages + 2 assistant responses
+
+    # get events
+    events = await report.aget_events()
+    assert len(events) > 0
