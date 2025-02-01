@@ -27,6 +27,8 @@ async def client() -> AsyncGenerator[LlamaReport, None]:
             for report_id in reports_before_ids:
                 if report_id not in reports_after_ids:
                     await client.adelete_report(report_id)
+        except Exception:
+            pass
         finally:
             await client.aclient.aclose()
 
