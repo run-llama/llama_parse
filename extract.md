@@ -1,4 +1,4 @@
-# LlamaExtract
+# LlamaExtract (beta/invite-only)
 
 > **⚠️ EXPERIMENTAL**
 > This library is under active development with frequent breaking changes. APIs and functionality may change significantly between versions. If you're interested in being an early adopter, please contact us at [support@llamaindex.ai](mailto:support@llamaindex.ai) or join our [Discord](https://discord.com/invite/eN6D2HQ4aX).
@@ -6,6 +6,10 @@
 LlamaExtract provides a simple API for extracting structured data from unstructured documents like PDFs, text files and images (upcoming).
 
 ## Quick Start
+
+```bash
+pip install llama-cloud-services
+```
 
 ```python
 from llama_extract import LlamaExtract
@@ -154,12 +158,6 @@ agent = extractor.get_agent(name="resume-parser")
 extractor.delete_agent(agent.id)
 ```
 
-## Installation
-
-```bash
-pip install llama-extract==0.1.0
-```
-
 ## Tips & Best Practices
 
 1. **Schema Design**:
@@ -182,5 +180,5 @@ pip install llama-extract==0.1.0
 
 ## Additional Resources
 
-- [Example Notebook](examples/resume_screening.ipynb) - Detailed walkthrough of resume parsing
+- [Example Notebook](examples/extract/resume_screening.ipynb) - Detailed walkthrough of resume parsing
 - [Discord Community](https://discord.com/invite/eN6D2HQ4aX) - Get help and share feedback

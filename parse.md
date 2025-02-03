@@ -1,9 +1,5 @@
 # LlamaParse
 
-[![PyPI - Downloads](https://img.shields.io/pypi/dm/llama-parse)](https://pypi.org/project/llama-parse/)
-[![GitHub contributors](https://img.shields.io/github/contributors/run-llama/llama_parse)](https://github.com/run-llama/llama_parse/graphs/contributors)
-[![Discord](https://img.shields.io/discord/1059199217496772688)](https://discord.gg/dGcwcsnxhU)
-
 LlamaParse is a **GenAI-native document parser** that can parse complex document data for any downstream LLM use case (RAG, agents).
 
 It is really good at the following:
@@ -36,7 +32,7 @@ pip install -U llama-index --upgrade --no-cache-dir --force-reinstall
 
 Lastly, install the package:
 
-`pip install llama-parse`
+`pip install llama-cloud-services`
 
 Now you can parse your first PDF file using the command line interface. Use the command `llama-parse [file_paths]`. See the help text with `llama-parse --help`.
 
@@ -146,20 +142,10 @@ Full documentation for `SimpleDirectoryReader` can be found on the [LlamaIndex D
 
 Several end-to-end indexing examples can be found in the examples folder
 
-- [Getting Started](examples/demo_basic.ipynb)
-- [Advanced RAG Example](examples/demo_advanced.ipynb)
-- [Raw API Usage](examples/demo_api.ipynb)
+- [Getting Started](examples/parse/demo_basic.ipynb)
+- [Advanced RAG Example](examples/parse/demo_advanced.ipynb)
+- [Raw API Usage](examples/parse/demo_api.ipynb)
 
 ## Documentation
 
 [https://docs.cloud.llamaindex.ai/](https://docs.cloud.llamaindex.ai/)
-
-## Terms of Service
-
-See the [Terms of Service Here](./TOS.pdf).
-
-## Get in Touch (LlamaCloud)
-
-LlamaParse is part of LlamaCloud, our e2e enterprise RAG platform that provides out-of-the-box, production-ready connectors, indexing, and retrieval over your complex data sources. We offer SaaS and VPC options.
-
-LlamaCloud is currently available via waitlist (join by [creating an account](https://cloud.llamaindex.ai/)). If you're interested in state-of-the-art quality and in centralizing your RAG efforts, come [get in touch with us](https://www.llamaindex.ai/contact).
