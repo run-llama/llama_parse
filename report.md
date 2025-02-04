@@ -80,6 +80,19 @@ suggestions = report.suggest_edits("Make the executive summary more concise")
 ...
 ```
 
+### Getting the Final Report
+
+Once you are satisfied with the report, you can get the final report object and use the content as you see fit.
+
+Here's an example of printing out the final report:
+
+```python
+report = report.get()
+report_text = "\n\n".join([block.template for block in report.blocks])
+
+print(report_text)
+```
+
 ## Additional Features
 
 - **Async Support**: All methods have async counterparts: `create_report` -> `acreate_report`, `wait_for_plan` -> `await_for_plan`, etc.
