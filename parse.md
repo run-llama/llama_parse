@@ -21,16 +21,7 @@ If you're a company interested in enterprise RAG solutions, and/or high volume/o
 
 First, login and get an api-key from [**https://cloud.llamaindex.ai/api-key ↗**](https://cloud.llamaindex.ai/api-key).
 
-Then, make sure you have the latest LlamaIndex version installed.
-
-**NOTE:** If you are upgrading from v0.9.X, we recommend following our [migration guide](https://pretty-sodium-5e0.notion.site/v0-10-0-Migration-Guide-6ede431dcb8841b09ea171e7f133bd77), as well as uninstalling your previous version first.
-
-```
-pip uninstall llama-index  # run this if upgrading from v0.9.x or older
-pip install -U llama-index --upgrade --no-cache-dir --force-reinstall
-```
-
-Lastly, install the package:
+Then, install the package:
 
 `pip install llama-cloud-services`
 
@@ -56,7 +47,7 @@ import nest_asyncio
 
 nest_asyncio.apply()
 
-from llama_parse import LlamaParse
+from llama_cloud_services import LlamaParse
 
 parser = LlamaParse(
     api_key="llx-...",  # can also be set in your env as LLAMA_CLOUD_API_KEY
@@ -88,7 +79,7 @@ import nest_asyncio
 
 nest_asyncio.apply()
 
-from llama_parse import LlamaParse
+from llama_cloud_services import LlamaParse
 
 parser = LlamaParse(
     api_key="llx-...",  # can also be set in your env as LLAMA_CLOUD_API_KEY
@@ -121,7 +112,7 @@ import nest_asyncio
 
 nest_asyncio.apply()
 
-from llama_parse import LlamaParse
+from llama_cloud_services import LlamaParse
 from llama_index.core import SimpleDirectoryReader
 
 parser = LlamaParse(

@@ -12,7 +12,7 @@ pip install llama-cloud-services
 ```
 
 ```python
-from llama_extract import LlamaExtract
+from llama_cloud_services import LlamaExtract
 from pydantic import BaseModel, Field
 
 # Initialize client

@@ -14,7 +14,7 @@ pip install llama-cloud-services
 ```
 
 ```python
-from llama_report import LlamaReport
+from llama_cloud_services import LlamaReport
 
 # Initialize the client
 client = LlamaReport(
