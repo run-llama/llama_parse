@@ -101,10 +101,23 @@ class ReportClient:
         """Synchronous wrapper for getting this report's details."""
         return self._run_sync(self.aget(version))
 
+    async def aupdate_report(self, updated_report: Report) -> ReportResponse:
+        """Update this report's content asynchronously."""
+        url = await self._build_url(f"/api/v1/reports/{self.report_id}")
+        response = await self.aclient.patch(
+            url, headers=self._headers, json={"content": updated_report.dict()}
+        )
+        response.raise_for_status()
+        return ReportResponse(**response.json())
+
+    def update_report(self, updated_report: Report) -> ReportResponse:
+        """Synchronous wrapper for updating this report's content."""
+        return self._run_sync(self.aupdate_report(updated_report))
+
     async def aupdate_plan(
         self,
         action: Literal["approve", "reject", "edit"],
-        updated_plan: Optional[dict] = None,
+        updated_plan: Optional[ReportPlan] = None,
     ) -> ReportResponse:
         """Update this report's plan asynchronously."""
         if action == "edit" and not updated_plan:
@@ -115,8 +128,13 @@ class ReportClient:
         )
 
         data = None
-        if updated_plan:
-            data = {"updated_plan": updated_plan}
+        if updated_plan is not None:
+            plan_dict = updated_plan.dict()
+            plan_dict.pop("generated_at", None)
+            data = plan_dict
+
+        if updated_plan is None and action == "edit":
+            raise ValueError("updated_plan is required when action is 'edit'")
 
         response = await self.aclient.patch(url, headers=self._headers, json=data)
         response.raise_for_status()
@@ -125,7 +143,7 @@ class ReportClient:
     def update_plan(
         self,
         action: Literal["approve", "reject", "edit"],
-        updated_plan: Optional[dict] = None,
+        updated_plan: Optional[ReportPlan] = None,
     ) -> ReportResponse:
         """Synchronous wrapper for updating this report's plan."""
         return self._run_sync(self.aupdate_plan(action, updated_plan))
@@ -279,20 +297,63 @@ class ReportClient:
         if len(suggestion.blocks) == 0:
             return
 
-        # Get current report content
+        # Determine if we're editing a plan or report based on first block type
+        is_plan_edit = isinstance(suggestion.blocks[0], ReportPlanBlock)
+
+        # Get current content
         report_response = await self.aget()
+        current_blocks = (
+            report_response.plan.blocks
+            if is_plan_edit
+            else report_response.report.blocks
+        )
 
         # Track the edit
-        new_report = None
+        new_blocks = []
         for edit_block in suggestion.blocks:
-            old_content = self._get_block_content(
-                next(
+            # Find matching block in current content
+            old_block = next(
+                (
                     b
-                    for b in report_response.report.blocks
-                    if b.idx == self._get_block_idx(edit_block)
-                )
+                    for b in current_blocks
+                    if self._get_block_idx(b) == self._get_block_idx(edit_block)
+                ),
+                None,
+            )
+
+            old_content = (
+                self._get_block_content(old_block) if old_block else "[No old content]"
             )
             new_content = self._get_block_content(edit_block)
+
+            if is_plan_edit:
+                new_queries_str = "\n".join(
+                    [
+                        f"Field: {q.field}, Prompt: {q.prompt}, Context: {q.context}"
+                        for q in edit_block.queries
+                    ]
+                )
+                new_dependency_str = (
+                    f"Depends on: {edit_block.dependency}"
+                    if edit_block.dependency
+                    else ""
+                )
+                new_content += f"\n\n{new_queries_str}\n{new_dependency_str}"
+
+                if old_block:
+                    old_queries_str = "\n".join(
+                        [
+                            f"Field: {q.field}, Prompt: {q.prompt}, Context: {q.context}"
+                            for q in old_block.queries
+                        ]
+                    )
+                    old_dependency_str = (
+                        f"Depends on: {old_block.dependency}"
+                        if old_block.dependency
+                        else ""
+                    )
+                    old_content += f"\n\n{old_queries_str}\n{old_dependency_str}"
+
             self.edit_history.append(
                 EditAction(
                     block_idx=self._get_block_idx(edit_block),
@@ -303,26 +364,73 @@ class ReportClient:
                 )
             )
 
-            # Update the specific block
-            new_report_blocks = [block for block in report_response.report.blocks]
-            for i, block in enumerate(new_report_blocks):
-                if block.idx == self._get_block_idx(edit_block):
-                    new_report_blocks[i] = ReportBlock(
-                        idx=block.idx, template=new_content, sources=block.sources
+            # Create updated block
+            if is_plan_edit:
+                new_blocks.append(
+                    ReportPlanBlock(
+                        block=ReportBlock(
+                            idx=edit_block.block.idx,
+                            template=self._get_block_content(edit_block),
+                            sources=edit_block.block.sources,
+                        ),
+                        queries=edit_block.queries,
+                        dependency=edit_block.dependency,
                     )
-                    break
+                )
+            else:
+                new_blocks.append(
+                    ReportBlock(
+                        idx=edit_block.idx,
+                        template=self._get_block_content(edit_block),
+                        sources=edit_block.sources,
+                    )
+                )
 
-            new_report = Report(
-                blocks=new_report_blocks,
-                id=report_response.report_id,
-            )
+        if new_blocks:
+            if is_plan_edit:
+                # Update plan in place
+                plan = report_response.plan
 
-        # Update the report
-        if new_report:
-            url = await self._build_url(f"/api/v1/reports/{self.report_id}")
-            await self.aclient.patch(
-                url, headers=self._headers, json={"content": new_report.dict()}
-            )
+                # Replace edited blocks and add new ones
+                for new_block in new_blocks:
+                    block_idx = self._get_block_idx(new_block)
+                    existing_block_idx = next(
+                        (
+                            i
+                            for i, b in enumerate(plan.blocks)
+                            if b.block.idx == block_idx
+                        ),
+                        None,
+                    )
+
+                    if existing_block_idx is not None:
+                        # Replace existing block
+                        plan.blocks[existing_block_idx] = new_block
+                    else:
+                        # Add new block to end
+                        plan.blocks.append(new_block)
+
+                await self.aupdate_plan("edit", plan)
+            else:
+                # Update report in place
+                report = report_response.report
+
+                # Replace edited blocks and add new ones
+                for new_block in new_blocks:
+                    block_idx = self._get_block_idx(new_block)
+                    existing_block_idx = next(
+                        (i for i, b in enumerate(report.blocks) if b.idx == block_idx),
+                        None,
+                    )
+
+                    if existing_block_idx is not None:
+                        # Replace existing block
+                        report.blocks[existing_block_idx] = new_block
+                    else:
+                        # Add new block to end
+                        report.blocks.append(new_block)
+
+                await self.aupdate_report(report)
 
     def accept_edit(self, suggestion: EditSuggestion) -> None:
         """Synchronous wrapper for accepting an edit."""
