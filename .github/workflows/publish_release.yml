@@ -38,7 +38,6 @@ jobs:
         with:
           poetry_version: ${{ env.POETRY_VERSION }}
           python_version: ${{ env.PYTHON_VERSION }}
-          working_directory: "llama_cloud_services"
           pypi_token: ${{ secrets.LLAMA_PARSE_PYPI_TOKEN }}
           poetry_install_options: "--without dev"
 
