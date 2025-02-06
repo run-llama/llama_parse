@@ -97,7 +97,7 @@ async def test_report_plan_workflow(report: ReportClient) -> None:
 
     # Get edit suggestions
     suggestions = await report.asuggest_edits(
-        "Make the text more formal.", auto_history=True
+        "TLDR section header more formal.", auto_history=True
     )
     assert len(suggestions) > 0
 
