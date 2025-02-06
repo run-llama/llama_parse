@@ -1,0 +1,298 @@
+<!doctype html>
+<html>
+  <head>
+    <style>
+      body {
+        font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #fff;
+        color: #333;
+        line-height: 1.6;
+      }
+
+      .container {
+        display: flex;
+        max-width: 1200px;
+        margin: 0 auto;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        background: #2c3e50;
+        color: white;
+        padding: 2rem;
+        width: 300px;
+      }
+
+      .main-content {
+        padding: 2rem;
+        flex: 1;
+      }
+
+      .profile-name {
+        font-size: 2.5rem;
+        margin: 0;
+        color: #2c3e50;
+        border-bottom: 3px solid #3498db;
+        padding-bottom: 0.5rem;
+      }
+
+      .profile-title {
+        font-size: 1.5rem;
+        color: #7f8c8d;
+        margin: 0.5rem 0 2rem 0;
+      }
+
+      .contact-info {
+        margin-bottom: 2rem;
+      }
+
+      .section-title {
+        font-size: 1.2rem;
+        text-transform: uppercase;
+        color: #3498db;
+        margin-bottom: 1rem;
+        letter-spacing: 1px;
+      }
+
+      .sidebar .section-title {
+        color: white;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 0.5rem;
+      }
+
+      .skill-category {
+        margin-bottom: 1rem;
+      }
+
+      .skill-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .skill-list li {
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+      }
+
+      .experience-item {
+        margin-bottom: 2rem;
+      }
+
+      .company-name {
+        font-weight: bold;
+        color: #2c3e50;
+        font-size: 1.1rem;
+      }
+
+      .job-title {
+        color: #3498db;
+        font-weight: bold;
+      }
+
+      .date {
+        color: #7f8c8d;
+        font-size: 0.9rem;
+      }
+
+      .achievements {
+        list-style: disc;
+        padding-left: 1.2rem;
+        margin-top: 0.5rem;
+      }
+
+      .contact-info a {
+        color: white;
+        text-decoration: none;
+      }
+
+      .education-item {
+        margin-bottom: 1rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="sidebar">
+        <div class="contact-info">
+          <h2 class="section-title">Contact</h2>
+          <p>sarah.chen@email.com</p>
+          <p>(555) 123-4567</p>
+          <p>San Francisco, CA</p>
+          <p><a href="#">LinkedIn Profile</a></p>
+        </div>
+
+        <div class="skills-section">
+          <h2 class="section-title">Technical Skills</h2>
+
+          <div class="skill-category">
+            <h3>Architecture & Design</h3>
+            <ul class="skill-list">
+              <li>Microservices</li>
+              <li>Event-Driven Architecture</li>
+              <li>Domain-Driven Design</li>
+              <li>REST APIs</li>
+            </ul>
+          </div>
+
+          <div class="skill-category">
+            <h3>Cloud Platforms</h3>
+            <ul class="skill-list">
+              <li>AWS (Advanced)</li>
+              <li>Azure</li>
+              <li>Google Cloud Platform</li>
+            </ul>
+          </div>
+
+          <div class="skill-category">
+            <h3>Programming</h3>
+            <ul class="skill-list">
+              <li>Java</li>
+              <li>Python</li>
+              <li>Go</li>
+              <li>JavaScript/TypeScript</li>
+            </ul>
+          </div>
+
+          <div class="skill-category">
+            <h3>Certifications</h3>
+            <ul class="skill-list">
+              <li>AWS Solutions Architect - Professional</li>
+              <li>Google Cloud Architect</li>
+              <li>Certified Kubernetes Administrator</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="main-content">
+        <h1 class="profile-name">Sarah Chen</h1>
+        <div class="profile-title">Senior Software Architect</div>
+
+        <div class="section">
+          <h2 class="section-title">Professional Summary</h2>
+          <p>
+            Innovative Software Architect with over 12 years of experience
+            designing and implementing large-scale distributed systems. Proven
+            track record of leading technical teams and delivering robust
+            enterprise solutions. Expert in cloud architecture, microservices,
+            and emerging technologies with a focus on scalable, maintainable
+            systems.
+          </p>
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">Professional Experience</h2>
+
+          <div class="experience-item">
+            <div class="company-name">TechCorp Solutions</div>
+            <div class="job-title">Senior Software Architect</div>
+            <div class="date">2020 - Present</div>
+            <ul class="achievements">
+              <li>
+                Led architectural design and implementation of a cloud-native
+                platform serving 2M+ users
+              </li>
+              <li>
+                Established architectural guidelines and best practices adopted
+                across 12 development teams
+              </li>
+              <li>
+                Reduced system latency by 40% through implementation of
+                event-driven architecture
+              </li>
+              <li>
+                Mentored 15+ senior developers in cloud-native development
+                practices
+              </li>
+            </ul>
+          </div>
+
+          <div class="experience-item">
+            <div class="company-name">DataFlow Systems</div>
+            <div class="job-title">Lead Software Engineer</div>
+            <div class="date">2016 - 2020</div>
+            <ul class="achievements">
+              <li>
+                Architected and led development of distributed data processing
+                platform handling 5TB daily
+              </li>
+              <li>
+                Designed microservices architecture reducing deployment time by
+                65%
+              </li>
+              <li>
+                Led migration of legacy monolith to cloud-native architecture
+              </li>
+              <li>
+                Managed team of 8 engineers across 3 international locations
+              </li>
+            </ul>
+          </div>
+
+          <div class="experience-item">
+            <div class="company-name">InnovateTech</div>
+            <div class="job-title">Senior Software Engineer</div>
+            <div class="date">2013 - 2016</div>
+            <ul class="achievements">
+              <li>
+                Developed high-performance trading platform processing 100K
+                transactions per second
+              </li>
+              <li>
+                Implemented real-time analytics engine reducing processing
+                latency by 75%
+              </li>
+              <li>
+                Led adoption of container orchestration reducing deployment
+                costs by 35%
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">Education</h2>
+
+          <div class="education-item">
+            <div class="company-name">Stanford University</div>
+            <div class="job-title">Master of Science in Computer Science</div>
+            <div class="date">2013</div>
+            <p>Focus: Distributed Systems and Machine Learning</p>
+          </div>
+
+          <div class="education-item">
+            <div class="company-name">University of California, Berkeley</div>
+            <div class="job-title">
+              Bachelor of Science in Computer Engineering
+            </div>
+            <div class="date">2011</div>
+            <p>Magna Cum Laude</p>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">Patents & Speaking</h2>
+          <ul class="achievements">
+            <li>
+              Co-inventor on three patents for distributed systems architecture
+            </li>
+            <li>
+              Published paper on "Scalable Microservices Architecture" at IEEE
+              Cloud Computing Conference 2022
+            </li>
+            <li>
+              Keynote Speaker, CloudCon 2023: "Future of Cloud-Native
+              Architecture"
+            </li>
+            <li>Regular presenter at local tech meetups and conferences</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
