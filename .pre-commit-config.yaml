@@ -33,6 +33,7 @@ repos:
     rev: v1.0.1
     hooks:
       - id: mypy
+        exclude: ^tests/
         additional_dependencies:
           [
             "types-requests",
@@ -46,7 +47,7 @@ repos:
           [
             --disallow-untyped-defs,
             --ignore-missing-imports,
-            --python-version=3.8,
+            --python-version=3.10,
           ]
   - repo: https://github.com/adamchainz/blacken-docs
     rev: 1.16.0
