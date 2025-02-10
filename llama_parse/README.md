@@ -146,9 +146,9 @@ Full documentation for `SimpleDirectoryReader` can be found on the [LlamaIndex D
 
 Several end-to-end indexing examples can be found in the examples folder
 
-- [Getting Started](examples/demo_basic.ipynb)
-- [Advanced RAG Example](examples/demo_advanced.ipynb)
-- [Raw API Usage](examples/demo_api.ipynb)
+- [Getting Started](/examples/parse/demo_basic.ipynb)
+- [Advanced RAG Example](/examples/parse/demo_advanced.ipynb)
+- [Raw API Usage](/examples/parse/demo_api.ipynb)
 
 ## Documentation
 
