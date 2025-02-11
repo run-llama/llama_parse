@@ -37,6 +37,21 @@ JOB_STATUS_ROUTE = "/api/parsing/job/{job_id}"
 JOB_UPLOAD_ROUTE = "/api/parsing/upload"
 
 
+def build_url(
+    base_url: str, organization_id: Optional[str], project_id: Optional[str]
+) -> str:
+    query_params = {}
+    if organization_id:
+        query_params["organization_id"] = organization_id
+    if project_id:
+        query_params["project_id"] = project_id
+
+    if query_params:
+        return base_url + "?" + "&".join([f"{k}={v}" for k, v in query_params.items()])
+
+    return base_url
+
+
 class LlamaParse(BasePydanticReader):
     """A smart-parser for files."""
 
@@ -49,6 +64,14 @@ class LlamaParse(BasePydanticReader):
     base_url: str = Field(
         default=DEFAULT_BASE_URL,
         description="The base URL of the Llama Parsing API.",
+    )
+    organization_id: Optional[str] = Field(
+        default=None,
+        description="The organization ID for the LlamaParse API.",
+    )
+    project_id: Optional[str] = Field(
+        default=None,
+        description="The project ID for the LlamaParse API.",
     )
     check_interval: int = Field(
         default=1,
@@ -639,7 +662,7 @@ class LlamaParse(BasePydanticReader):
         if self.page_suffix is not None:
             data["page_suffix"] = self.page_suffix
 
-        if self.parsing_instruction is not None:
+        if self.parsing_instruction:
             print(
                 "WARNING: parsing_instruction is deprecated. Use complemental_formatting_instruction or content_guideline_instruction instead."
             )
@@ -706,7 +729,8 @@ class LlamaParse(BasePydanticReader):
             data["gpt4o_api_key"] = self.gpt4o_api_key
 
         try:
-            resp = await self.aclient.post(JOB_UPLOAD_ROUTE, files=files, data=data)  # type: ignore
+            url = build_url(JOB_UPLOAD_ROUTE, self.organization_id, self.project_id)
+            resp = await self.aclient.post(url, files=files, data=data)  # type: ignore
             resp.raise_for_status()  # this raises if status is not 2xx
             return resp.json()["id"]
         except httpx.HTTPStatusError as err:  # this catches it

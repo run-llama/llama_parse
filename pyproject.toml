@@ -8,7 +8,7 @@ python_version = "3.10"
 
 [tool.poetry]
 name = "llama-cloud-services"
-version = "0.6.0"
+version = "0.6.1"
 description = "Tailored SDK clients for LlamaCloud services."
 authors = ["Logan Markewich <logan@runllama.ai>"]
 license = "MIT"
