@@ -36,16 +36,12 @@ jobs:
       - name: Build and publish llama-cloud-services
         uses: JRubics/poetry-publish@v2.1
         with:
-          poetry_version: ${{ env.POETRY_VERSION }}
-          python_version: ${{ env.PYTHON_VERSION }}
           pypi_token: ${{ secrets.LLAMA_PARSE_PYPI_TOKEN }}
           poetry_install_options: "--without dev"
 
       - name: Build and publish llama-parse
         uses: JRubics/poetry-publish@v2.1
         with:
-          poetry_version: ${{ env.POETRY_VERSION }}
-          python_version: ${{ env.PYTHON_VERSION }}
           working_directory: "llama_parse"
           pypi_token: ${{ secrets.LLAMA_PARSE_PYPI_TOKEN }}
           poetry_install_options: "--without dev"
