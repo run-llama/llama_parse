@@ -163,14 +163,7 @@ class LlamaParse(BasePydanticReader):
         default=None,
         description="The top margin of the bounding box to use to extract text from documents expressed as a float between 0 and 1 representing the percentage of the page height.",
     )
-    complemental_formatting_instruction: Optional[str] = Field(
-        default=None,
-        description="The complemental formatting instruction for the parser. Tell llamaParse how some thing should to be formatted, while retaining the markdown output.",
-    )
-    content_guideline_instruction: Optional[str] = Field(
-        default=None,
-        description="The content guideline for the parser. Tell LlamaParse how the content should be changed / transformed.",
-    )
+
     continuous_mode: Optional[bool] = Field(
         default=False,
         description="Parse documents continuously, leading to better results on documents where tables span across two pages.",
@@ -203,10 +196,7 @@ class LlamaParse(BasePydanticReader):
         default=False,
         description="Note: Non compatible with gpt-4o. If set to true, the parser will use a faster mode to extract text from documents. This mode will skip OCR of images, and table/heading reconstruction.",
     )
-    formatting_instruction: Optional[str] = Field(
-        default=None,
-        description="The Formatting instruction for the parser. Override default llamaParse behavior. In most case you want to use complemental_formatting_instruction instead.",
-    )
+
     guess_xlsx_sheet_names: Optional[bool] = Field(
         default=False,
         description="Whether to guess the sheet names of the xlsx file.",
@@ -282,6 +272,10 @@ class LlamaParse(BasePydanticReader):
         default=None,
         description="A templated suffix to add to the beginning of each page. If it contain `{page_number}`, it will be replaced by the page number.",
     )
+    parsing_mode: Optional[str] = Field(
+        default=None,
+        description="The parsing mode to use, see ParsingMode enum for possible values ",
+    )
     premium_mode: Optional[bool] = Field(
         default=False,
         description="Use our best parser mode if set to True.",
@@ -327,6 +321,14 @@ class LlamaParse(BasePydanticReader):
         default=None,
         description="The named JSON Schema to use to structure the output of the parsing job. For convenience / testing, LlamaParse provides a few named JSON Schema that can be used directly. Use 'imFeelingLucky' to let llamaParse dream the schema.",
     )
+    system_prompt: Optional[str] = Field(
+        default=None,
+        description="The system prompt. Replace llamaParse default system prompt, may impact accuracy",
+    )
+    system_prompt_append: Optional[str] = Field(
+        default=None,
+        description="String to append to default system prompt.",
+    )
     take_screenshot: Optional[bool] = Field(
         default=False,
         description="Whether to take screenshot of each page of the document.",
@@ -335,9 +337,9 @@ class LlamaParse(BasePydanticReader):
         default=None,
         description="The target pages to extract text from documents. Describe as a comma separated list of page numbers. The first page of the document is page 0",
     )
-    use_vendor_multimodal_model: Optional[bool] = Field(
-        default=False,
-        description="Whether to use the vendor multimodal API.",
+    user_prompt: Optional[str] = Field(
+        default=None,
+        description="The user prompt. Replace llamaParse default user prompt",
     )
     vendor_multimodal_api_key: Optional[str] = Field(
         default=None,
@@ -357,6 +359,18 @@ class LlamaParse(BasePydanticReader):
         default=None,
         description="The bounding box to use to extract text from documents describe as a string containing the bounding box margins",
     )
+    complemental_formatting_instruction: Optional[str] = Field(
+        default=None,
+        description="The complemental formatting instruction for the parser. Tell llamaParse how some thing should to be formatted, while retaining the markdown output.",
+    )
+    content_guideline_instruction: Optional[str] = Field(
+        default=None,
+        description="The content guideline for the parser. Tell LlamaParse how the content should be changed / transformed.",
+    )
+    formatting_instruction: Optional[str] = Field(
+        default=None,
+        description="The Formatting instruction for the parser. Override default llamaParse behavior. In most case you want to use complemental_formatting_instruction instead.",
+    )
     gpt4o_mode: Optional[bool] = Field(
         default=False,
         description="Whether to use gpt-4o extract text from documents.",
@@ -371,6 +385,11 @@ class LlamaParse(BasePydanticReader):
     )
     parsing_instruction: Optional[str] = Field(
         default="", description="The parsing instruction for the parser."
+    )
+
+    use_vendor_multimodal_model: Optional[bool] = Field(
+        default=False,
+        description="Whether to use the vendor multimodal API.",
     )
 
     @field_validator("api_key", mode="before", check_fields=True)
@@ -552,11 +571,17 @@ class LlamaParse(BasePydanticReader):
             data["bbox_top"] = self.bbox_top
 
         if self.complemental_formatting_instruction:
+            print(
+                "WARNING: complemental_formatting_instruction is deprecated and may be remove in a future release. Use system_prompt, system_prompt_append or user_prompt instead."
+            )
             data[
                 "complemental_formatting_instruction"
             ] = self.complemental_formatting_instruction
 
         if self.content_guideline_instruction:
+            print(
+                "WARNING: content_guideline_instruction is deprecated and may be remove in a future release. Use system_prompt, system_prompt_append or user_prompt instead."
+            )
             data["content_guideline_instruction"] = self.content_guideline_instruction
 
         if self.continuous_mode:
@@ -584,6 +609,9 @@ class LlamaParse(BasePydanticReader):
             data["fast_mode"] = self.fast_mode
 
         if self.formatting_instruction:
+            print(
+                "WARNING: formatting_instruction is deprecated and may be remove in a future release. Use system_prompt, system_prompt_append or user_prompt instead."
+            )
             data["formatting_instruction"] = self.formatting_instruction
 
         if self.guess_xlsx_sheet_names:
@@ -623,6 +651,9 @@ class LlamaParse(BasePydanticReader):
             data["invalidate_cache"] = self.invalidate_cache
 
         if self.is_formatting_instruction:
+            print(
+                "WARNING: formatting_instruction is deprecated and may be remove in a future release. Use system_prompt, system_prompt_append or user_prompt instead."
+            )
             data["is_formatting_instruction"] = self.is_formatting_instruction
 
         if self.job_timeout_extra_time_per_page_in_seconds is not None:
@@ -664,7 +695,7 @@ class LlamaParse(BasePydanticReader):
 
         if self.parsing_instruction:
             print(
-                "WARNING: parsing_instruction is deprecated. Use complemental_formatting_instruction or content_guideline_instruction instead."
+                "WARNING: parsing_instruction is deprecated. Use system_prompt, system_prompt_append or user_prompt instead."
             )
             data["parsing_instruction"] = self.parsing_instruction
 
@@ -699,13 +730,17 @@ class LlamaParse(BasePydanticReader):
             data[
                 "structured_output_json_schema_name"
             ] = self.structured_output_json_schema_name
-
+        if self.system_prompt is not None:
+            data["system_prompt"] = self.system_prompt
+        if self.system_prompt_append is not None:
+            data["system_prompt_append"] = self.system_prompt_append
         if self.take_screenshot:
             data["take_screenshot"] = self.take_screenshot
 
         if self.target_pages is not None:
             data["target_pages"] = self.target_pages
-
+        if self.user_prompt is not None:
+            data["user_prompt"] = self.user_prompt
         if self.use_vendor_multimodal_model:
             data["use_vendor_multimodal_model"] = self.use_vendor_multimodal_model
 
