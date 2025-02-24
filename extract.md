@@ -33,7 +33,7 @@ print(result.data)
 ## Core Concepts
 
 - **Extraction Agents**: Reusable extractors configured with a specific schema and extraction settings.
-- **Data Schema**: Structure definition for the data you want to extract.
+- **Data Schema**: Structure definition for the data you want to extract in the form of a JSON schema or a Pydantic model.
 - **Extraction Jobs**: Asynchronous extraction tasks that can be monitored.
 
 ## Defining Schemas
