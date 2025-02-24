@@ -2,7 +2,7 @@ import os
 import pytest
 from pathlib import Path
 from pydantic import BaseModel
-    
+
 from llama_cloud_services.extract import LlamaExtract, ExtractionAgent
 from tests.extract.util import load_test_dotenv
 
