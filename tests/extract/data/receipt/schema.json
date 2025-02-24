@@ -1,12 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "required": [
-    "receiptNumber",
-    "datePaid",
-    "total",
-    "items"
-  ],
+  "required": ["receiptNumber", "datePaid", "total", "items"],
   "properties": {
     "receiptNumber": {
       "type": "string"
@@ -23,13 +18,7 @@
       "properties": {
         "type": {
           "type": "string",
-          "enum": [
-            "visa",
-            "mastercard",
-            "amex",
-            "cash",
-            "other"
-          ]
+          "enum": ["visa", "mastercard", "amex", "cash", "other"]
         },
         "lastFourDigits": {
           "type": "string",

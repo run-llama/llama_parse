@@ -21,21 +21,11 @@
     },
     {
       "category": "Cloud Platforms",
-      "keywords": [
-        "AWS",
-        "Azure",
-        "Google Cloud Platform"
-      ]
+      "keywords": ["AWS", "Azure", "Google Cloud Platform"]
     },
     {
       "category": "Programming Languages",
-      "keywords": [
-        "Java",
-        "Python",
-        "Go",
-        "JavaScript",
-        "TypeScript"
-      ]
+      "keywords": ["Java", "Python", "Go", "JavaScript", "TypeScript"]
     }
   ],
   "experience": [

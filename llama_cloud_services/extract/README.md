@@ -96,16 +96,16 @@ agent = extractor.create_agent(name="resume-parser", data_schema=schema)
 
 ### Important restrictions on JSON/Pydantic Schema
 
-*LlamaExtract only supports a subset of the JSON Schema specification.* While limited, it should
+_LlamaExtract only supports a subset of the JSON Schema specification._ While limited, it should
 be sufficient for a wide variety of use-cases.
 
-  - All fields are required by default. Nullable fields must be explicitly marked as such,
+- All fields are required by default. Nullable fields must be explicitly marked as such,
   using `"anyOf"` with a `"null"` type. See `"start_date"` field above.
-  - Root node must be of type `"object"`.
-  - Schema nesting must be limited to within 5 levels.
-  - The important fields are key names/titles, type and description. Fields for
+- Root node must be of type `"object"`.
+- Schema nesting must be limited to within 5 levels.
+- The important fields are key names/titles, type and description. Fields for
   formatting, default values, etc. are not supported.
-  - There are other restrictions on number of keys, size of the schema, etc. that you may
+- There are other restrictions on number of keys, size of the schema, etc. that you may
   hit for complex extraction use cases. In such cases, it is worth thinking how to restructure
   your extraction workflow to fit within these constraints, e.g. by extracting subset of fields
   and later merging them together.
@@ -163,20 +163,21 @@ pip install llama-extract==0.1.0
 ## Tips & Best Practices
 
 1. **Schema Design**:
+
    - Try to limit schema nesting to 3-4 levels.
    - Make fields optional when data might not always be present. Having required fields may force the model
-   to hallucinate when these fields are not present in the documents.
+     to hallucinate when these fields are not present in the documents.
    - When you want to extract a variable number of entities, use an `array` type. Note that you cannot use
-   an `array` type for the root node.
+     an `array` type for the root node.
    - Use descriptive field names and detailed descriptions. Use descriptions to pass formatting
-   instructions or few-shot examples.
+     instructions or few-shot examples.
    - Start simple and iteratively build your schema to incorporate requirements.
 
 2. **Running Extractions**:
    - Note that resetting `agent.schema` will not save the schema to the database,
-   until you call `agent.save`, but it will be used for running extractions.
+     until you call `agent.save`, but it will be used for running extractions.
    - Check job status prior to accessing results. Any extraction error should be available as
-   part of `job.error` or `extraction_run.error` fields for debugging.
+     part of `job.error` or `extraction_run.error` fields for debugging.
    - Consider async operations (`queue_extraction`) for large-scale extraction once you have finalized your schema.
 
 ## Additional Resources

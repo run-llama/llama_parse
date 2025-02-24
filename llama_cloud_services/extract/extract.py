@@ -3,7 +3,7 @@ import os
 import time
 from io import BufferedIOBase, BufferedReader, BytesIO
 from pathlib import Path
-from typing import List, Optional, Type, Union, Tuple, Coroutine, Any, TypeVar
+from typing import List, Optional, Type, Union, Coroutine, Any, TypeVar
 import warnings
 import httpx
 from pydantic import BaseModel
