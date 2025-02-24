@@ -1,17 +1,15 @@
 import os
 import pytest
-from pathlib import Path
 
 from llama_cloud_services.extract import LlamaExtract, ExtractionAgent
-from dotenv import load_dotenv
 from collections import namedtuple
 import json
 import uuid
 from llama_cloud.types import ExtractConfig, ExtractMode
 from deepdiff import DeepDiff
-from tests.extract.util import json_subset_match_score
+from tests.extract.util import json_subset_match_score, load_test_dotenv
 
-load_dotenv(Path(__file__).parent.parent / ".env.dev", override=True)
+load_test_dotenv()
 
 
 TEST_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
