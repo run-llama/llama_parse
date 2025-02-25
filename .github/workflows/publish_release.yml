@@ -14,7 +14,7 @@ env:
 jobs:
   build-n-publish:
     name: Build and publish to PyPI
-    if: github.repository == 'run-llama/llama_parse'
+    if: github.repository == 'run-llama/llama_cloud_services'
     runs-on: ubuntu-latest
 
     steps:
