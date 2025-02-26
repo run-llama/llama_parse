@@ -14,6 +14,16 @@ class ResultType(str, Enum):
     STRUCTURED = "structured"
 
 
+class ParsingMode(str, Enum):
+    """The parsing mode for the parser."""
+
+    parse_page_without_llm = "parse_page_without_llm"
+    parse_page_with_llm = "parse_page_with_llm"
+    parse_page_with_lvm = "parse_page_with_lvm"
+    parse_page_with_agent = "parse_page_with_agent"
+    parse_document_with_llm = "parse_document_with_llm"
+
+
 class Language(str, Enum):
     BAZA = "abq"
     ADYGHE = "ady"
