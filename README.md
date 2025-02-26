@@ -36,7 +36,7 @@ See the quickstart guides for each service for more information:
 
 - [LlamaParse](./parse.md)
 - [LlamaReport (beta/invite-only)](./report.md)
-- [LlamaExtract (coming soon!)]()
+- [LlamaExtract (beta/invite-only)](./extract.md)
 
 ## Documentation
 
