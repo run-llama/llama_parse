@@ -111,6 +111,10 @@ class LlamaParse(BasePydanticReader):
     )
 
     # Parsing specific configurations (Alphabetical order)
+    adaptive_long_table: Optional[bool] = Field(
+        default=False,
+        description="If set to true, LlamaParse will try to detect long table and adapt the output.",
+    )
     annotate_links: Optional[bool] = Field(
         default=False,
         description="Annotate links found in the document to extract their URL.",
@@ -519,6 +523,9 @@ class LlamaParse(BasePydanticReader):
         data: Dict[str, Any] = {}
 
         data["from_python_package"] = True
+
+        if self.adaptive_long_table:
+            data["adaptive_long_table"] = self.adaptive_long_table
 
         if self.annotate_links:
             data["annotate_links"] = self.annotate_links
